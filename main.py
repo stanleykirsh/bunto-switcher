@@ -54,7 +54,7 @@ def switch_layout():
         layout = get_layout()
 
         if layout != initial_layout:
-            time.sleep(0.35)
+            time.sleep(0.3)
             return True
 
     return False
@@ -91,7 +91,7 @@ def auto_process(char):
         switch_layout()
         keyboard.write(string)
         keyboard.read_event()
-        suppress_listener(0.02)
+        suppress_listener(0.01)
 
 
 def manual_process(char):
@@ -106,7 +106,7 @@ def manual_process(char):
         switch_layout()
         keyboard.write(string)
         keyboard.read_event()
-        suppress_listener(0.02)
+        suppress_listener(0.01)
 
 
 def update_buffer(char):
@@ -144,7 +144,7 @@ def main():
     """ No comments. """
     while True:
         event = keyboard.read_event()
-        if event.event_type == keyboard.KEY_DOWN:
+        if event.event_type == keyboard.KEY_UP:
             if event.name == 'f12':
                 break
             on_press(event)

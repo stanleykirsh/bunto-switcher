@@ -1,3 +1,4 @@
+import keyboard
 import subprocess
 import time
 from parameters import RUS_CHARS, ENG_CHARS
@@ -62,14 +63,25 @@ def distinct():
     print(len(set(d)))
     print(set(d))
 
+
 def test_gsettings():
     print(time.time())
     command = ['gsettings', 'get',
-            'org.gnome.desktop.input-sources', 'sources']
-    result = subprocess.run(command, capture_output=True, text=True, shell=False).stdout
+               'org.gnome.desktop.input-sources', 'sources']
+    result = subprocess.run(command, capture_output=True,
+                            text=True, shell=False).stdout
     print(time.time())
-    print(result[10:12])    
+    print(result[10:12])
 
 # convert()
 # distinct()
 # test_gsettings()
+
+import keyboard
+while 1:
+    event = keyboard.read_event()
+    if event.event_type == keyboard.KEY_DOWN:
+        print('start =', time.time())
+        event = keyboard.read_event()
+        if event.event_type == keyboard.KEY_UP:
+            print('__end =', time.time())
