@@ -1,0 +1,24 @@
+1. Обработка кейса:
+    а. ыгвщ => sudo => space
+    б. dnf => вта => space
+    в. 'pause' => ничего не происходит
+    Ожидание что после 'pause' произойдет переключение на исходную раскладку и текст 'dnf'.
+
+
+# получить раскладку
+# gsettings get org.gnome.desktop.input-sources mru-sources
+# [('xkb', 'se'), ('xkb', 'us')]
+# gsettings get org.gnome.desktop.input-sources mru-sources | sed -r "s/\S*\s'([^']+).*/\1/"
+
+# установить раскладку
+# gsettings set org.gnome.desktop.input-sources sources "[('xkb', 'us')]"
+# gsettings set org.gnome.desktop.input-sources sources "[('xkb', 'ru')]"
+# gsettings set org.gnome.desktop.input-sources sources "[('xkb', 'us'), ('xkb', 'ru')]"
+# gsettings set org.gnome.desktop.input-sources sources "[('xkb', 'ru'), ('xkb', 'us')]"
+
+# Если посмотреть что именно происходит на переключении раскладок по хоткею, то там:
+# gsettings monitor org.gnome.desktop.input-sources
+# mru-sources: [('xkb', 'ru'), ('xkb', 'us')]
+# mru-sources: [('xkb', 'us'), ('xkb', 'ru')]
+# mru-sources: [('xkb', 'ru'), ('xkb', 'us')]
+# mru-sources: [('xkb', 'us'), ('xkb', 'ru')]
