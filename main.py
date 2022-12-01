@@ -60,18 +60,6 @@ def switch_layout():
     return False
 
 
-def suppress_listener(delay):
-    """ No comments. """
-    global listener_enabled
-    listener_enabled = False
-
-    def enable_listener():
-        global listener_enabled
-        listener_enabled = True
-
-    keyboard.call_later(fn=enable_listener, args=(), delay=delay)
-
-
 def auto_process(char):
     """ No comments. """
     print('auto_process', char)
@@ -91,7 +79,6 @@ def auto_process(char):
         switch_layout()
         keyboard.write(string)
         keyboard.read_event()
-        suppress_listener(0.01)
 
 
 def manual_process(char):
@@ -106,7 +93,6 @@ def manual_process(char):
         switch_layout()
         keyboard.write(string)
         keyboard.read_event()
-        suppress_listener(0.01)
 
 
 def update_buffer(char):
@@ -147,6 +133,7 @@ def main():
         if event.event_type == keyboard.KEY_UP:
             if event.name == 'f12':
                 break
+            print(event)
             on_press(event)
 
 
