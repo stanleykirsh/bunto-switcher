@@ -49,12 +49,12 @@ def switch_layout():
     initial_layout = get_layout()
     keyboard.send(SYS_SWITCH_KEY)
 
-    for _ in range(50):
-        time.sleep(0.04)
+    for _ in range(40):
+        time.sleep(0.05)
         layout = get_layout()
 
         if layout != initial_layout:
-            time.sleep(0.3)
+            time.sleep(0.35)
             return True
 
     return False
@@ -76,25 +76,21 @@ def auto_process(char):
     """ No comments. """
     print('auto_process', char)
     if char in ASWITCH_KEYS:
+
         print('ASWITCH_KEYS', buffer)
-        string = ''.join(buffer)[:-1]
+        string = ''.join(buffer)
         initial_layout = get_layout()
 
-        print('>>>char', char)
-        print('initial_layout', initial_layout)
-        print('ngram_contain(string, ngrams_en)', ngram_contain(string, ngrams_en))
-        print('ngram_contain(string, ngrams_en)', ngram_contain(string, ngrams_ru))
-
-        if not (initial_layout == 'us' and ngram_contain(string, ngrams_en) or
-                initial_layout == 'ru' and ngram_contain(string, ngrams_ru)):
+        if not (initial_layout == 'us' and ngram_contain(string[:-1], ngrams_en) or
+                initial_layout == 'ru' and ngram_contain(string[:-1], ngrams_ru)):
             return
 
-        for _ in range(len(buffer) + 1):
+        for _ in buffer:
             keyboard.send('backspace')
 
         switch_layout()
-        keyboard.write(string + ' ')
-        # buffer.clear()
+        keyboard.write(string)
+        keyboard.read_event()
         suppress_listener(0.02)
 
 
@@ -109,7 +105,7 @@ def manual_process(char):
 
         switch_layout()
         keyboard.write(string)
-        # buffer.clear()
+        keyboard.read_event()
         suppress_listener(0.02)
 
 
@@ -120,12 +116,17 @@ def update_buffer(char):
     if not listener_enabled:
         return
 
-    if char in RUS_CHARS + ENG_CHARS and len(buffer) >= 2 and buffer[-1] == ' ':
+    if (char in RUS_CHARS + ENG_CHARS
+            and len(buffer) >= 2
+            and buffer[-1] == ' '):
         buffer.clear()
+
     if char in RUS_CHARS + ENG_CHARS:
         buffer.append(char)
+
     if char == 'space':
         buffer.append(' ')
+
     if char in ('left', 'right', 'up', 'down'):
         buffer.clear()
 
@@ -136,13 +137,17 @@ def on_press(key):
     """ No comments. """
     update_buffer(key.name)
     manual_process(key.name)
-    #auto_process(key.name)
+    auto_process(key.name)
 
 
 def main():
     """ No comments. """
-    keyboard.on_release(callback=on_press)
-    keyboard.wait('f12')
+    while True:
+        event = keyboard.read_event()
+        if event.event_type == keyboard.KEY_DOWN:
+            if event.name == 'f12':
+                break
+            on_press(event)
 
 
 if __name__ == '__main__':
