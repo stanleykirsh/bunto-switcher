@@ -44,12 +44,23 @@ def get_layout():
     return xkb.group_symbol
 
 
+def keyboard_type(text: list, delay: int = 0):
+    """ Печатает переданный список нажатий клавиш. """
+    for keys in text:
+        keyboard.send(keys)
+        time.sleep(delay)
+
+
 def switch_layout():
     """ No comments. """
-    initial_layout = get_layout()
-    keyboard.send(SYS_SWITCH_KEY)
+    global listener_enabled
 
-    for _ in range(40):
+    initial_layout = get_layout()
+    listener_enabled = False
+    keyboard.send(SYS_SWITCH_KEY)
+    listener_enabled = True
+
+    for _ in range(20):
         time.sleep(0.05)
         layout = get_layout()
 
@@ -62,10 +73,13 @@ def switch_layout():
 
 def auto_process(char):
     """ No comments. """
+    global listener_enabled
     print('auto_process', char)
-    if char in ASWITCH_KEYS:
 
+    if char in ASWITCH_KEYS:
         print('ASWITCH_KEYS', buffer)
+
+        listener_enabled = False
         string = ''.join(buffer)
         initial_layout = get_layout()
 
@@ -77,30 +91,31 @@ def auto_process(char):
             keyboard.send('backspace')
 
         switch_layout()
-        keyboard.write(string)
+        keyboard_type(buffer, 0.01)
         keyboard.read_event()
+        listener_enabled = True
 
 
 def manual_process(char):
     """ No comments. """
+    global listener_enabled
     print('manual_process', char)
+
     if char in MSWITCH_KEYS:
-        string = ''.join(buffer)
+        listener_enabled = False
 
         for _ in buffer:
             keyboard.send('backspace')
 
         switch_layout()
-        keyboard.write(string)
+        keyboard_type(buffer, 0.01)
         keyboard.read_event()
+        listener_enabled = True
 
 
 def update_buffer(char):
     """ No comments. """
     print('char =', char)
-
-    if not listener_enabled:
-        return
 
     if (char in RUS_CHARS + ENG_CHARS
             and len(buffer) >= 2
@@ -108,12 +123,18 @@ def update_buffer(char):
         buffer.clear()
 
     if char in RUS_CHARS + ENG_CHARS:
+        if keyboard.is_pressed('shift'):
+            char = 'shift+' + char
         buffer.append(char)
 
     if char == 'space':
         buffer.append(' ')
 
-    if char in ('left', 'right', 'up', 'down'):
+    if char == 'backspace':
+        if buffer:
+            buffer.pop()
+
+    if char in ('left', 'right', 'up', 'down', 'delete', 'enter'):
         buffer.clear()
 
     print(buffer)
@@ -128,13 +149,15 @@ def on_press(key):
 
 def main():
     """ No comments. """
+    global listener_enabled
     while True:
         event = keyboard.read_event()
-        if event.event_type == keyboard.KEY_UP:
+        if event.event_type == keyboard.KEY_UP and listener_enabled:
             if event.name == 'f12':
                 break
-            print(event)
+            listener_enabled = False
             on_press(event)
+            listener_enabled = True
 
 
 if __name__ == '__main__':
@@ -148,5 +171,10 @@ if __name__ == '__main__':
         './data/nonexistent3gram-en.txt',
         './data/nonexistent4gram-en.txt',
     ))
+
+    import subprocess
+    result = subprocess.run(
+        ['ls', '-l'], capture_output=True, text=True).stdout
+    print(result)
 
     main()
