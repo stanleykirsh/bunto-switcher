@@ -1,4 +1,3 @@
-import keyboard
 import subprocess
 import time
 from parameters import RUS_CHARS, ENG_CHARS
@@ -76,12 +75,3 @@ def test_gsettings():
 # convert()
 # distinct()
 # test_gsettings()
-
-import keyboard
-while 1:
-    event = keyboard.read_event()
-    if event.event_type == keyboard.KEY_DOWN:
-        print('start =', time.time())
-        event = keyboard.read_event()
-        if event.event_type == keyboard.KEY_UP:
-            print('__end =', time.time())

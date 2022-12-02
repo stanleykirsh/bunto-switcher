@@ -54,21 +54,9 @@ def keyboard_type(text: list, delay: int = 0):
 def switch_layout():
     """ No comments. """
     global listener_enabled
-
-    initial_layout = get_layout()
     listener_enabled = False
     keyboard.send(SYS_SWITCH_KEY)
     listener_enabled = True
-
-    for _ in range(20):
-        time.sleep(0.05)
-        layout = get_layout()
-
-        if layout != initial_layout:
-            time.sleep(0.3)
-            return True
-
-    return False
 
 
 def auto_process(char):
@@ -91,7 +79,7 @@ def auto_process(char):
             keyboard.send('backspace')
 
         switch_layout()
-        keyboard_type(buffer, 0.01)
+        keyboard_type(buffer)
         keyboard.read_event()
         listener_enabled = True
 
@@ -108,7 +96,7 @@ def manual_process(char):
             keyboard.send('backspace')
 
         switch_layout()
-        keyboard_type(buffer, 0.01)
+        keyboard_type(buffer)
         keyboard.read_event()
         listener_enabled = True
 
@@ -126,15 +114,21 @@ def update_buffer(char):
         if keyboard.is_pressed('shift'):
             char = 'shift+' + char
         buffer.append(char)
+        return
 
     if char == 'space':
         buffer.append(' ')
+        return
 
     if char == 'backspace':
         if buffer:
             buffer.pop()
+        return
 
-    if char in ('left', 'right', 'up', 'down', 'delete', 'enter'):
+    if (char not in RUS_CHARS + ENG_CHARS
+            and char not in ASWITCH_KEYS + MSWITCH_KEYS
+            and char not in ('ctrl+shift', 'ctrl', 'shift', 'space', 'backspace')):
+        print('buffer.clear', char)
         buffer.clear()
 
     print(buffer)
@@ -171,10 +165,5 @@ if __name__ == '__main__':
         './data/nonexistent3gram-en.txt',
         './data/nonexistent4gram-en.txt',
     ))
-
-    import subprocess
-    result = subprocess.run(
-        ['ls', '-l'], capture_output=True, text=True).stdout
-    print(result)
 
     main()
