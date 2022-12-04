@@ -10,7 +10,6 @@ buffer = []
 ngrams_ru = []
 ngrams_en = []
 
-listener_enabled = True
 xkb = XKeyboard()
 
 
@@ -53,21 +52,15 @@ def keyboard_type(text: list, delay: int = 0):
 
 def switch_layout():
     """ No comments. """
-    global listener_enabled
-    listener_enabled = False
     keyboard.send(SYS_SWITCH_KEY)
-    listener_enabled = True
 
 
 def auto_process(char):
     """ No comments. """
-    global listener_enabled
     print('auto_process', char)
 
     if char in ASWITCH_KEYS:
         print('ASWITCH_KEYS', buffer)
-
-        listener_enabled = False
         string = ''.join(buffer)
         initial_layout = get_layout()
 
@@ -81,16 +74,13 @@ def auto_process(char):
         switch_layout()
         keyboard_type(buffer)
         keyboard.read_event()
-        listener_enabled = True
 
 
 def manual_process(char):
     """ No comments. """
-    global listener_enabled
     print('manual_process', char)
 
     if char in MSWITCH_KEYS:
-        listener_enabled = False
 
         for _ in buffer:
             keyboard.send('backspace')
@@ -98,7 +88,6 @@ def manual_process(char):
         switch_layout()
         keyboard_type(buffer)
         keyboard.read_event()
-        listener_enabled = True
 
 
 def update_buffer(char):
@@ -147,7 +136,7 @@ def on_press(key):
 
 def main():
     """ No comments. """
-    global listener_enabled
+    listener_enabled = True
     while True:
         event = keyboard.read_event()
         if event.event_type == keyboard.KEY_UP and listener_enabled:
