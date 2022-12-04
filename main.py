@@ -1,5 +1,6 @@
 import time
 import keyboard
+import parameters
 
 from xkbgroup import XKeyboard
 from parameters import RUS_CHARS, ENG_CHARS
@@ -10,7 +11,6 @@ ngrams_ru = []
 ngrams_en = []
 
 listener_enabled = True
-
 xkb = XKeyboard()
 
 
@@ -120,14 +120,16 @@ def update_buffer(char):
         buffer.append(' ')
         return
 
+    '''
     if char == 'backspace':
         if buffer:
             buffer.pop()
         return
+    '''
 
     if (char not in RUS_CHARS + ENG_CHARS
             and char not in ASWITCH_KEYS + MSWITCH_KEYS
-            and char not in ('ctrl+shift', 'ctrl', 'shift', 'space', 'backspace')):
+            and char not in ('ctrl+shift', 'ctrl', 'shift', 'space')):
         print('buffer.clear', char)
         buffer.clear()
 
@@ -137,8 +139,10 @@ def update_buffer(char):
 def on_press(key):
     """ No comments. """
     update_buffer(key.name)
-    manual_process(key.name)
-    auto_process(key.name)
+    if parameters.MANUAL_ENABLED:
+        manual_process(key.name)
+    if parameters.AUTO_ENABLED:
+        auto_process(key.name)
 
 
 def main():
