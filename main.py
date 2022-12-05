@@ -1,4 +1,5 @@
 import time
+import mouse
 import keyboard
 import parameters
 
@@ -100,6 +101,8 @@ def update_buffer(char):
         buffer.clear()
 
     if char in RUS_CHARS + ENG_CHARS:
+        if keyboard.is_pressed('ctrl'):
+            return
         if keyboard.is_pressed('shift'):
             char = 'shift+' + char
         buffer.append(char)
@@ -109,17 +112,14 @@ def update_buffer(char):
         buffer.append(' ')
         return
 
-    '''
     if char == 'backspace':
         if buffer:
             buffer.pop()
         return
-    '''
 
     if (char not in RUS_CHARS + ENG_CHARS
             and char not in ASWITCH_KEYS + MSWITCH_KEYS
             and char not in ('ctrl+shift', 'ctrl', 'shift', 'space')):
-        print('buffer.clear', char)
         buffer.clear()
 
     print(buffer)
@@ -134,17 +134,19 @@ def on_press(key):
         auto_process(key.name)
 
 
+def on_mouse_click():
+    buffer.clear()
+
+
 def main():
     """ No comments. """
-    listener_enabled = True
+    mouse.on_button(on_mouse_click)
     while True:
         event = keyboard.read_event()
-        if event.event_type == keyboard.KEY_UP and listener_enabled:
-            if event.name == 'f12':
-                break
-            listener_enabled = False
+        if event.name == 'f12':
+            break
+        if event.event_type == keyboard.KEY_UP:
             on_press(event)
-            listener_enabled = True
 
 
 if __name__ == '__main__':
