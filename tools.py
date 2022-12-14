@@ -17,10 +17,10 @@ def translit(string):
 
 def convert():
 
-    with open("./data/nonexistent4gram-ru.txt", "r") as f:
+    with open("./data/triggers-ru.txt", "r") as f:
         score = f.readlines()
 
-    with open("./data/nonexistent4gram-ru-tran.txt", "w") as f:
+    with open("./data/triggers-ru-tran.txt", "w") as f:
         for s in score:
             f.write(translit(s))
 
@@ -72,6 +72,6 @@ def test_gsettings():
     print(time.time())
     print(result[10:12])
 
-# convert()
+convert()
 # distinct()
 # test_gsettings()

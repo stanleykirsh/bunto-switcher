@@ -24,14 +24,16 @@ class Switcher():
     def __init__(self):
         """ No comments. """
         self.ngrams_ru = self.load_ngrams((
-            './data/nonexistent2gram-ru-tran.txt',
-            './data/nonexistent3gram-ru-tran.txt',
+            './data/triggers-ru-tran.txt',
             './data/nonexistent4gram-ru-tran.txt',
+            './data/nonexistent3gram-ru-tran.txt',
+            './data/nonexistent2gram-ru-tran.txt',
         ))
         self.ngrams_en = self.load_ngrams((
-            './data/nonexistent2gram-en.txt',
-            './data/nonexistent3gram-en.txt',
+            './data/triggers-en.txt',
             './data/nonexistent4gram-en.txt',
+            './data/nonexistent3gram-en.txt',
+            './data/nonexistent2gram-en.txt',
         ))
 
     def load_ngrams(self, filenames):
@@ -47,14 +49,14 @@ class Switcher():
         """ Проверяет содержится ли строка string в списке n-грам ngrams. """
         string = string.lower()
         for ngram in ngrams:
-            if ngram.startswith('*'):
-                if string.endswith(ngram[1:]):
+            if ngram in string:
+                return True
+            elif ngram.startswith('*'):
+                if string.startswith(ngram[1:]):
                     return True
             elif ngram.endswith('*'):
-                if string.startswith(ngram[:-1]):
-                    return True
-            elif ngram in string:
-                return True
+                if string.endswith(ngram[:-1]):
+                    return True            
         return False
 
     def get_layout(self):
@@ -88,7 +90,8 @@ class Switcher():
                 keyboard.send('backspace')
 
             self.switch_layout()
-            self.keyboard_type(self.buffer)
+            self.keyboard_type(
+                text=self.buffer, delay=0.01)
 
     def manual_process(self, char):
         """ No comments. """
@@ -99,7 +102,8 @@ class Switcher():
                 keyboard.send('backspace')
 
             self.switch_layout()
-            self.keyboard_type(self.buffer)
+            self.keyboard_type(
+                text=self.buffer, delay=0.01)
 
     def update_buffer(self, char):
         """ No comments. """
@@ -122,10 +126,10 @@ class Switcher():
             self.buffer.append(' ')
             return
 
-        if char == 'backspace':
-            if self.buffer:
-                self.buffer.pop()
-            return
+        #if char == 'backspace':
+        #    if self.buffer:
+        #        self.buffer.pop()
+        #    return
 
         if (char not in RUS_CHARS + ENG_CHARS
                 and char not in ASWITCH_KEYS + MSWITCH_KEYS
@@ -157,12 +161,12 @@ class Switcher():
             self.supressed = False
         keyboard.call_later(fn=_unlock, delay=0.01)
 
+    def start(self):
+        """ No comments. """        
+        self.thread = Thread(target=self.main)
+        self.thread.start()
+
     def main(self):
         """ No comments. """
         mouse.on_button(self.on_mouse_click)
         keyboard.on_release(self.on_release)
-
-    def start(self):
-        """ No comments. """
-        self.thread = Thread(target=self.main)
-        self.thread.start()

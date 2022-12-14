@@ -21,7 +21,7 @@ APPINDICATOR_ID = 'buntoappindicator'
 
 
 def main():
-    icon = 'rotate-circle-white.png'
+    icon = 'flag-white.png'
     indicator = appindicator.Indicator.new(APPINDICATOR_ID, 
         os.path.abspath(icon), appindicator.IndicatorCategory.APPLICATION_STATUS)
     indicator.set_status(appindicator.IndicatorStatus.ACTIVE)
