@@ -3,7 +3,6 @@ import mouse
 import keyboard
 import parameters
 
-from threading import Thread
 from xkbgroup import XKeyboard
 from parameters import RUS_CHARS, ENG_CHARS
 from parameters import SYS_SWITCH_KEY, ASWITCH_KEYS, MSWITCH_KEYS
@@ -12,13 +11,10 @@ from parameters import SYS_SWITCH_KEY, ASWITCH_KEYS, MSWITCH_KEYS
 class Switcher():
     """ No comments. """
     xkb = XKeyboard()
-    keyboard = keyboard
-    mouse = mouse
 
     buffer = []
     ngrams_ru = []
     ngrams_en = []
-    thread = Thread()
     supressed = False
 
     def __init__(self):
@@ -56,7 +52,7 @@ class Switcher():
                     return True
             elif ngram.endswith('*'):
                 if string.endswith(ngram[:-1]):
-                    return True            
+                    return True
         return False
 
     def get_layout(self):
@@ -126,7 +122,7 @@ class Switcher():
             self.buffer.append(' ')
             return
 
-        #if char == 'backspace':
+        # if char == 'backspace':
         #    if self.buffer:
         #        self.buffer.pop()
         #    return
@@ -161,12 +157,11 @@ class Switcher():
             self.supressed = False
         keyboard.call_later(fn=_unlock, delay=0.01)
 
-    def start(self):
-        """ No comments. """        
-        self.thread = Thread(target=self.main)
-        self.thread.start()
-
     def main(self):
         """ No comments. """
         mouse.on_button(self.on_mouse_click)
         keyboard.on_release(self.on_release)
+
+    def start(self):
+        """ No comments. """
+        self.main()
