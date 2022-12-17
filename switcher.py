@@ -1,16 +1,17 @@
 import time
-import mouse
-import keyboard
+# import mouse
 import parameters
 
 from xkbgroup import XKeyboard
+from keyboard.keyboard import Keyboard
 from parameters import RUS_CHARS, ENG_CHARS
 from parameters import SYS_SWITCH_KEY, ASWITCH_KEYS, MSWITCH_KEYS
 
 
 class Switcher():
-    """ No comments. """
-    xkb = XKeyboard()
+    """ No comments. """    
+    xkb = XKeyboard()    
+    keyboard = Keyboard()
 
     buffer = []
     ngrams_ru = []
@@ -62,12 +63,12 @@ class Switcher():
     def keyboard_type(self, text: list, delay: int = 0):
         """ Печатает переданный список нажатий клавиш. """
         for keys in text:
-            keyboard.send(keys)
+            self.keyboard.send(keys)
             time.sleep(delay)
 
     def switch_layout(self):
         """ No comments. """
-        keyboard.send(SYS_SWITCH_KEY)
+        self.keyboard.send(SYS_SWITCH_KEY)
 
     def auto_process(self, char):
         """ No comments. """
@@ -75,15 +76,16 @@ class Switcher():
 
         if char in ASWITCH_KEYS:
             print('ASWITCH_KEYS', self.buffer)
-            string = ''.join(self.buffer)
             initial_layout = self.get_layout()
+            string = ''.join(self.buffer).replace('shift+', '')
+            print('string=', string)
 
             if not (initial_layout == 'us' and self.ngram_contain(string[:-1], self.ngrams_en) or
                     initial_layout == 'ru' and self.ngram_contain(string[:-1], self.ngrams_ru)):
                 return
 
             for _ in self.buffer:
-                keyboard.send('backspace')
+                self.keyboard.send('backspace')
 
             self.switch_layout()
             self.keyboard_type(
@@ -95,7 +97,7 @@ class Switcher():
 
         if char in MSWITCH_KEYS:
             for _ in self.buffer:
-                keyboard.send('backspace')
+                self.keyboard.send('backspace')
 
             self.switch_layout()
             self.keyboard_type(
@@ -111,9 +113,9 @@ class Switcher():
             self.buffer.clear()
 
         if char in RUS_CHARS + ENG_CHARS:
-            if keyboard.is_pressed('ctrl'):
+            if self.keyboard.is_pressed('ctrl'):
                 return
-            if keyboard.is_pressed('shift'):
+            if self.keyboard.is_pressed('shift'):
                 char = 'shift+' + char
             self.buffer.append(char)
             return
@@ -141,13 +143,13 @@ class Switcher():
         """ No comments. """
         if self.supressed:
             return
-        self.lock_listener()
-        self.update_buffer(key.name)
+        #self.lock_listener()
+        self.update_buffer(key)
         if parameters.MANUAL_ENABLED:
-            self.manual_process(key.name)
+            self.manual_process(key)
         if parameters.AUTO_ENABLED:
-            self.auto_process(key.name)
-        self.unlock_listener()
+            self.auto_process(key)
+        #self.unlock_listener()
 
     def lock_listener(self):
         self.supressed = True
@@ -155,13 +157,20 @@ class Switcher():
     def unlock_listener(self):
         def _unlock():
             self.supressed = False
-        keyboard.call_later(fn=_unlock, delay=0.01)
+        #keyboard.call_later(fn=_unlock, delay=0.01)
 
     def main(self):
         """ No comments. """
-        mouse.on_button(self.on_mouse_click)
-        keyboard.on_release(self.on_release)
+        # mouse.on_button(self.on_mouse_click)
+        # keyboard.on_release(self.on_release)
+        while True:
+            event = self.keyboard.read_event()
+            if event.type == 'up':
+                self.on_release(event.key_char)
 
     def start(self):
         """ No comments. """
         self.main()
+
+switcher = Switcher()
+switcher.main()
