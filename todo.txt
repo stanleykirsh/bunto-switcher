@@ -1,31 +1,13 @@
-0. обработка ошибки при отключении клавиатуры.
+- свой модуль мыши
 
-0. звук при автоматическом переключении.
+- автоопределенние клавиатуры
 
-0. звук при опечатке.
+- открывать настройки из gui
 
-0. в качестве триггера для переключения использовать последний символ из буфера.
-Потому что если написано 'зкште(', то последний символ будет '9', а в буффере 'shift+9'.
+- разобраться с ручным переключением. срабатывает не всегда. иногда не срабатывает после пробела. 
 
-##########################################
+- стиль темы в gui. как вариант запускать процесс switch отдельно от GUI. а сам GUI запускать без sudo.
 
-0. Кастомный переключатель и получатель раскладки
-# получить раскладку
-# gsettings get org.gnome.desktop.input-sources mru-sources
-# [('xkb', 'se'), ('xkb', 'us')]
-# gsettings get org.gnome.desktop.input-sources mru-sources | sed -r "s/\S*\s'([^']+).*/\1/"
+- звук при автоматическом переключении.
 
-# установить раскладку
-# gsettings set org.gnome.desktop.input-sources sources "[('xkb', 'us')]"
-# gsettings set org.gnome.desktop.input-sources sources "[('xkb', 'ru')]"
-# gsettings set org.gnome.desktop.input-sources sources "[('xkb', 'us'), ('xkb', 'ru')]"
-# gsettings set org.gnome.desktop.input-sources sources "[('xkb', 'ru'), ('xkb', 'us')]"
-
-# Если посмотреть что именно происходит на переключении раскладок по хоткею, то там:
-# gsettings monitor org.gnome.desktop.input-sources
-# mru-sources: [('xkb', 'ru'), ('xkb', 'us')]
-# mru-sources: [('xkb', 'us'), ('xkb', 'ru')]
-# mru-sources: [('xkb', 'ru'), ('xkb', 'us')]
-# mru-sources: [('xkb', 'us'), ('xkb', 'ru')]
-
-похоже что это не поможет. потому что есть старый баг в gnome DE. тормозное переключение раскладки.
+- звук при опечатке.
