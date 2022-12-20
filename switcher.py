@@ -1,9 +1,9 @@
 import time
-import mouse
 import parameters
 
 from threading import Thread
 from xkbgroup import XKeyboard
+from mouse.mouse import Mouse
 from keyboard.keyboard import Keyboard
 from parameters import RUS_CHARS, ENG_CHARS
 from parameters import SYS_SWITCH_KEY, ASWITCH_KEYS, MSWITCH_KEYS
@@ -13,6 +13,7 @@ class Switcher():
     """ No comments. """
     xkb = XKeyboard()
     keyboard = Keyboard()
+    mouse = Mouse()
 
     buffer = []
     ngrams_ru = []
@@ -95,12 +96,12 @@ class Switcher():
         print('manual_process', char)
 
         if char in MSWITCH_KEYS:
+            time.sleep(0.2)
+
             for _ in self.buffer:
                 self.keyboard.send('backspace')
-                time.sleep(0.01)
 
             self.switch_layout()
-            time.sleep(0.01)
             self.keyboard_type(text=self.buffer)
             self.keyboard.syn()
 
@@ -125,10 +126,10 @@ class Switcher():
             self.buffer.append(' ')
             return
 
-        if char == 'backspace':
-            if self.buffer:
-                self.buffer.pop()
-            return
+        # if char == 'backspace':
+        #    if self.buffer:
+        #        self.buffer.pop()
+        #    return
 
         if (char not in RUS_CHARS + ENG_CHARS
                 and char not in ASWITCH_KEYS + MSWITCH_KEYS
@@ -137,7 +138,8 @@ class Switcher():
 
         print(self.buffer)
 
-    def on_mouse_click(self):
+    def on_mouse_click(self, event):
+        print('on_mouse_click')
         self.buffer.clear()
 
     def on_release(self, key):
@@ -150,13 +152,15 @@ class Switcher():
 
     def main(self):
         """ No comments. """
-        mouse.on_button(self.on_mouse_click)
         while True:
             event = self.keyboard.read_event()
             if event.type == 'up':
+                print('event.type == up')
                 self.on_release(event.key_char)
 
     def start(self):
         """ No comments. """
-        self.main_thread = Thread(target=self.main, daemon=True)
-        self.main_thread.start()
+        self.mouse.on_button(self.on_mouse_click)
+
+        keyboard_thread = Thread(target=self.main, daemon=True)
+        keyboard_thread.start()

@@ -43,21 +43,21 @@ class Keyboard:
                         return Event(key_code, key_name, key_char, event_type)
             except:
                 pass
-    
+
     def syn(self):
         self.controller.syn()
-    
+
     def press(self, char):
         """"""
         key_code = ecodes.ecodes[self._char_to_key(char)]
         self.controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
-        #self.controller.syn()
+        # self.controller.syn()
 
     def release(self, char):
         """"""
         key_code = ecodes.ecodes[self._char_to_key(char)]
         self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
-        #self.controller.syn()
+        # self.controller.syn()
 
     def send(self, chars):
         """"""
