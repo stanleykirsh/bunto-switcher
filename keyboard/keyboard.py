@@ -3,7 +3,6 @@ from evdev import InputDevice, UInput, list_devices, ecodes, categorize
 
 
 class Event:
-
     def __init__(self, key_code, key_name, key_char, event_type):
         """ No comments. """
         self.key_code = key_code
@@ -13,20 +12,24 @@ class Event:
 
 
 class Keyboard:
-    # TBD : автоопределение устройства клавиатуры
-    device_path = '/dev/input/event5'
-    listener = InputDevice(device_path)
-    controller = UInput.from_device(device_path)
+    
+    device_path = None
+    controller = None
+    listener = None
 
     def __init__(self):
         """"""
-        pass
+        self.device_path = self._get_device_path()
+        self.controller = UInput.from_device(self.device_path)
 
-    def _get_device(self):
+    def _get_device_path(self):
         """"""
-        devices = [InputDevice(path) for path in list_devices()]
-        for device in devices:
-            print(device.path, device.name, device.phys)
+        for path in list_devices():
+            listener = InputDevice(path)
+            if (ecodes.KEY_BACKSPACE in listener.capabilities()[ecodes.EV_KEY]
+                    and listener.name != 'py-evdev-uinput'):
+                print('keyboard detected on path:', path)
+                return listener.path
 
     def read_event(self):
         """"""

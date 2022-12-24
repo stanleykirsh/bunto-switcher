@@ -1,5 +1,3 @@
-import io
-
 from threading import Thread
 from evdev import InputDevice, ecodes, categorize, list_devices
 
@@ -27,10 +25,10 @@ class Mouse:
         """"""
         for path in list_devices():
             listener = InputDevice(path)
-            capabilities = _print_to_string(listener.capabilities(verbose=True))
-            if 'BTN_MOUSE' in capabilities and listener.name != 'py-evdev-uinput':
+            if (ecodes.BTN_MOUSE in listener.capabilities()[ecodes.EV_KEY]
+                    and listener.name != 'py-evdev-uinput'):
                 print('mouse detected on path:', path)
-                return path
+                return listener.path
 
     def _on_button(self, callback):
         while True:
@@ -54,11 +52,3 @@ class Mouse:
     def on_button(self, callback):
         thread = Thread(target=self._on_button, args=[callback], daemon=True)
         thread.start()
-
-
-def _print_to_string(*args, **kwargs):
-    output = io.StringIO()
-    print(*args, file=output, **kwargs)
-    contents = output.getvalue()
-    output.close()
-    return contents
