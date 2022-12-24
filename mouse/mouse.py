@@ -25,10 +25,13 @@ class Mouse:
         """"""
         for path in list_devices():
             listener = InputDevice(path)
-            if (ecodes.BTN_MOUSE in listener.capabilities()[ecodes.EV_KEY]
-                    and listener.name != 'py-evdev-uinput'):
-                print('mouse detected on path:', path)
-                return listener.path
+            try:
+                if (ecodes.BTN_MOUSE in listener.capabilities()[ecodes.EV_KEY]
+                        and listener.name != 'py-evdev-uinput'):
+                    print('mouse detected on path:', path)
+                    return listener.path
+            except:
+                pass
 
     def _on_button(self, callback):
         while True:

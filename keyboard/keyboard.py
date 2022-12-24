@@ -1,4 +1,4 @@
-from . import keys
+from . import keymap
 from evdev import InputDevice, UInput, list_devices, ecodes, categorize
 
 
@@ -12,7 +12,7 @@ class Event:
 
 
 class Keyboard:
-    
+
     device_path = None
     controller = None
     listener = None
@@ -26,10 +26,13 @@ class Keyboard:
         """"""
         for path in list_devices():
             listener = InputDevice(path)
-            if (ecodes.KEY_BACKSPACE in listener.capabilities()[ecodes.EV_KEY]
-                    and listener.name != 'py-evdev-uinput'):
-                print('keyboard detected on path:', path)
-                return listener.path
+            try:
+                if (ecodes.KEY_BACKSPACE in listener.capabilities()[ecodes.EV_KEY]
+                        and listener.name != 'py-evdev-uinput'):
+                    print('keyboard detected on path:', path)
+                    return listener.path
+            except:
+                pass
 
     def read_event(self):
         """"""
@@ -86,18 +89,18 @@ class Keyboard:
 
     def _key_to_char(self, key_name):
         """"""
-        for line in keys.EV_KEYS:
+        for line in keymap.EV_KEYS:
             if line[0] == key_name:
                 return line[1]
 
     def _char_to_key(self, char):
         """"""
-        for line in keys.EV_KEYS:
+        for line in keymap.EV_KEYS:
             if line[1] == char.lower() or line[2] == char:
                 return line[0]
 
     def _char_to_code(self, char):
         """"""
-        for line in keys.EV_KEYS:
+        for line in keymap.EV_KEYS:
             if line[1] == char.lower():
                 return line[3]
