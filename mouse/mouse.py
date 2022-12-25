@@ -15,28 +15,28 @@ class Mouse:
 
     callback = None
     listener = None
-    device_path = None
+    devices = []
 
     def __init__(self):
         """"""
-        self.device_path = self._get_device_path()
+        self._get_devices()
 
-    def _get_device_path(self):
+    def _get_devices(self):
         """"""
         for path in list_devices():
             listener = InputDevice(path)
             try:
                 if (ecodes.BTN_MOUSE in listener.capabilities()[ecodes.EV_KEY]
                         and listener.name != 'py-evdev-uinput'):
-                    print('mouse detected on path:', path)
-                    return listener.path
+                    print('обнаружено устройство типа мышь:', path)
+                    self.devices.append(listener.path)
             except:
                 pass
 
-    def _on_button(self, callback):
+    def _listener_loop(self, callback, device):
         while True:
             try:
-                self.listener = InputDevice(self.device_path)
+                self.listener = InputDevice(device)
                 for event in self.listener.read_loop():
                     if event.type == ecodes.EV_KEY:
                         categorized = str(categorize(event))
@@ -53,5 +53,20 @@ class Mouse:
                 pass
 
     def on_button(self, callback):
-        thread = Thread(target=self._on_button, args=[callback], daemon=True)
-        thread.start()
+        for device in self.devices:
+            thread = Thread(target=self._listener_loop, args=[
+                            callback, device], daemon=True)
+            thread.start()
+
+
+### DEBUG ###
+'''
+def test(event):
+    print(event)
+
+
+m = Mouse()
+m.on_button(test)
+input()
+'''
+# DEBUG ###
