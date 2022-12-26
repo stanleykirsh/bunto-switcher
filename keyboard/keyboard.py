@@ -1,5 +1,6 @@
-from . import keymap
+from threading import Thread
 from evdev import InputDevice, UInput, list_devices, ecodes, categorize
+from . import keymap
 
 
 class Event:
@@ -16,29 +17,31 @@ class Keyboard:
     device_path = None
     controller = None
     listener = None
+    devices = []
 
     def __init__(self):
         """"""
-        self.device_path = self._get_device_path()
-        self.controller = UInput.from_device(self.device_path)
+        self._get_devices()
+        # self.controller = UInput.from_device(self.device_path)
 
-    def _get_device_path(self):
+    def _get_devices(self):
         """"""
         for path in list_devices():
             listener = InputDevice(path)
             try:
                 if (ecodes.KEY_BACKSPACE in listener.capabilities()[ecodes.EV_KEY]
                         and listener.name != 'py-evdev-uinput'):
-                    print('keyboard detected on path:', path)
-                    return listener.path
+                    print('обнаружено устройство типа клавиатура:', path)
+                    self.devices.append(listener.path)
             except:
                 pass
 
-    def read_event(self):
+    def _listener_loop(self, callback, device):
         """"""
         while True:
             try:
-                self.listener = InputDevice(self.device_path)
+                self.listener = InputDevice(device)
+                self.controller = UInput.from_device(device) #########TBD###########
                 for event in self.listener.read_loop():
                     if event.type == ecodes.EV_KEY:
                         categorized = str(categorize(event)).split()
@@ -46,9 +49,26 @@ class Keyboard:
                         key_name = categorized[5][1:-2]
                         key_char = self._key_to_char(key_name)
                         event_type = categorized[6]
-                        return Event(key_code, key_name, key_char, event_type)
-            except:
+                        callback(
+                            Event(key_code, key_name, key_char, event_type))
+            except Exception as e:
+                print(e)
                 pass
+
+    def read_event(self, device):
+        """"""
+        try:
+            self.listener = InputDevice(device)
+            for event in self.listener.read_loop():
+                if event.type == ecodes.EV_KEY:
+                    categorized = str(categorize(event)).split()
+                    key_code = categorized[4]
+                    key_name = categorized[5][1:-2]
+                    key_char = self._key_to_char(key_name)
+                    event_type = categorized[6]
+                    return Event(key_code, key_name, key_char, event_type)
+        except:
+            pass
 
     def syn(self):
         self.controller.syn()
@@ -104,3 +124,23 @@ class Keyboard:
         for line in keymap.EV_KEYS:
             if line[1] == char.lower():
                 return line[3]
+
+    def on_key_event(self, callback):
+        """"""
+        for device in self.devices:            
+            thread = Thread(target=self._listener_loop, args=[
+                            callback, device], daemon=True)
+            thread.start()
+
+
+### DEBUG ###
+'''
+def test(event):
+    print(event)
+
+
+k = Keyboard()
+k.on_key_event(test)
+input()
+'''
+# DEBUG ###

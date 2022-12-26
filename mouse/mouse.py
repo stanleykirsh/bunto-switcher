@@ -1,5 +1,5 @@
 from threading import Thread
-from evdev import InputDevice, ecodes, categorize, list_devices
+from evdev import InputDevice, UInput, ecodes, categorize, list_devices
 
 
 class Event:
@@ -34,6 +34,7 @@ class Mouse:
                 pass
 
     def _listener_loop(self, callback, device):
+        """"""
         while True:
             try:
                 self.listener = InputDevice(device)
@@ -49,10 +50,11 @@ class Mouse:
                         if 'BTN_RIGHT' in categorized:
                             callback(Event('273', 'BTN_RIGHT',
                                      'right button', categorized[-1]))
-            except:
+            except Exception as e: 
+                print(e)
                 pass
 
-    def on_button(self, callback):
+    def on_button_event(self, callback):
         for device in self.devices:
             thread = Thread(target=self._listener_loop, args=[
                             callback, device], daemon=True)
@@ -66,7 +68,7 @@ def test(event):
 
 
 m = Mouse()
-m.on_button(test)
+m.on_button_event(test)
 input()
 '''
 # DEBUG ###
