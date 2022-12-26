@@ -144,7 +144,7 @@ class Switcher():
 
     def on_key_pressed(self, event):
         """ No comments. """
-        print(event.key_char)
+        print('on_key_pressed =', event.key_char)
         if event.type == 'up':
             key = event.key_char
             self.update_buffer(key)
@@ -153,18 +153,7 @@ class Switcher():
             if parameters.AUTO_ENABLED:
                 self.auto_process(key)
 
-    def main(self):
-        """ No comments. """
-        while True:
-            event = self.keyboard.read_event()
-            if event.type == 'up':
-                print('event.type == up')
-                self.on_release(event.key_char)
-
     def start(self):
         """ No comments. """
         self.mouse.on_button_event(self.on_mouse_click)
         self.keyboard.on_key_event(self.on_key_pressed)
-
-        #keyboard_thread = Thread(target=self.main, daemon=True)
-        #keyboard_thread.start()
