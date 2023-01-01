@@ -28,18 +28,8 @@ class Switcher():
 
         self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
 
-        self.ngrams_ru = self.load_ngrams((
-            './data/nonexistent4gram-ru-tran.txt',
-            './data/nonexistent3gram-ru-tran.txt',
-            './data/nonexistent2gram-ru-tran.txt',
-            './data/triggers-ru-tran.txt',
-        ))
-        self.ngrams_en = self.load_ngrams((
-            './data/nonexistent4gram-en.txt',
-            './data/nonexistent3gram-en.txt',
-            './data/nonexistent2gram-en.txt',
-            './data/triggers-en.txt',
-        ))
+        self.ngrams_ru = self.load_ngrams(('./data/ngrams-ru.txt',))
+        self.ngrams_en = self.load_ngrams(('./data/ngrams-en.txt',))
 
     def load_ngrams(self, filenames):
         """ No comments. """
@@ -50,18 +40,26 @@ class Switcher():
                 result.extend(lines)
         return result
 
-    def ngram_contain(self, string, ngrams):
-        """ Проверяет содержится ли строка string в списке n-грам ngrams. """
+    def ngram_contain_continuous(self, string, ngrams):
+        """ Проверяет содержится ли строка string в списке n-грам ngrams
+        в процессе ввода слова до того как будет введен разделитель.
+        """
         string = string.lower()
         for ngram in ngrams:
-            if ngram in string:
+            if string == ngram:
                 return True
-            elif ngram.startswith('*'):
-                if string.startswith(ngram[1:]):
-                    return True
-            elif ngram.endswith('*'):
-                if string.endswith(ngram[:-1]):
-                    return True
+        return False
+
+    def ngram_contain_complete(self, string, ngrams):
+        """ Проверяет содержится ли строка string в списке n-грам ngrams
+        при вводе разделителя типа пробела и т.д.
+        """
+        string = string.lower()
+        strlen = len(string)
+        for ngram in reversed(ngrams):
+            if ((strlen <= 5 and string == ngram) or
+                    (strlen > 5 and string.startswith(ngram))):
+                return True
         return False
 
     def get_layout(self):
@@ -79,7 +77,6 @@ class Switcher():
         if initial_layout == 'us':
             translited = ''.join(RU[US.find(s)] for s in string)
         return translited
-
 
     def keyboard_type(self, text: list, delay: int = 0):
         """ Печатает переданный список нажатий клавиш. """
@@ -100,8 +97,8 @@ class Switcher():
             initial_layout = self.get_layout()
             string = ''.join(self.buffer).replace('shift+', '').strip()
 
-            if not (initial_layout == 'us' and self.ngram_contain(string[:-1], self.ngrams_en) or
-                    initial_layout == 'ru' and self.ngram_contain(string[:-1], self.ngrams_ru)):
+            if not (initial_layout == 'ru' and self.ngram_contain_complete(string, self.ngrams_en) or
+                    initial_layout == 'us' and self.ngram_contain_complete(string, self.ngrams_ru)):
                 return
 
             translited = self.translit(''.join(self.buffer))
