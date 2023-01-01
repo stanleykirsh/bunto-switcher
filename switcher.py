@@ -1,37 +1,44 @@
+from parameters import SYS_SWITCH_KEY, ASWITCH_KEYS, MSWITCH_KEYS
+from parameters import RUS_CHARS, ENG_CHARS
+from keyboard.keyboard import Keyboard
+from mouse.mouse import Mouse
+from xkbgroup import XKeyboard
+from gi.repository import Gtk, Gdk
+
+import gi
 import time
 import parameters
 
-from threading import Thread
-from xkbgroup import XKeyboard
-from mouse.mouse import Mouse
-from keyboard.keyboard import Keyboard
-from parameters import RUS_CHARS, ENG_CHARS
-from parameters import SYS_SWITCH_KEY, ASWITCH_KEYS, MSWITCH_KEYS
+gi.require_version("Gtk", "3.0")
 
 
 class Switcher():
     """ No comments. """
-    xkb = XKeyboard()
-    keyboard = Keyboard()
-    mouse = Mouse()
-
-    buffer = []
-    ngrams_ru = []
-    ngrams_en = []
 
     def __init__(self):
         """ No comments. """
+
+        self.xkb = XKeyboard()
+        self.keyboard = Keyboard()
+        self.mouse = Mouse()
+
+        self.buffer = []
+        self.ngrams_ru = []
+        self.ngrams_en = []
+
+        self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+
         self.ngrams_ru = self.load_ngrams((
-            './data/triggers-ru-tran.txt',
             './data/nonexistent4gram-ru-tran.txt',
             './data/nonexistent3gram-ru-tran.txt',
             './data/nonexistent2gram-ru-tran.txt',
+            './data/triggers-ru-tran.txt',
         ))
         self.ngrams_en = self.load_ngrams((
-            './data/triggers-en.txt',
             './data/nonexistent4gram-en.txt',
             './data/nonexistent3gram-en.txt',
             './data/nonexistent2gram-en.txt',
+            './data/triggers-en.txt',
         ))
 
     def load_ngrams(self, filenames):
@@ -61,6 +68,19 @@ class Switcher():
         """ No comments. """
         return self.xkb.group_symbol
 
+    def translit(self, string: str):
+        """ No comments. """
+        RU = str(RUS_CHARS+' ')
+        US = str(ENG_CHARS+' ')
+        initial_layout = self.get_layout()
+        if initial_layout == 'ru':
+            translited = ''.join(RU[US.find(s)] for s in string)
+            translited = ''.join(US[RU.find(s)] for s in translited)
+        if initial_layout == 'us':
+            translited = ''.join(RU[US.find(s)] for s in string)
+        return translited
+
+
     def keyboard_type(self, text: list, delay: int = 0):
         """ Печатает переданный список нажатий клавиш. """
         for keys in text:
@@ -73,10 +93,10 @@ class Switcher():
 
     def auto_process(self, char):
         """ No comments. """
-        print('auto_process', char)
+        #print('auto_process', char)
 
         if char in ASWITCH_KEYS:
-            print('ASWITCH_KEYS', self.buffer)
+            #print('ASWITCH_KEYS', self.buffer)
             initial_layout = self.get_layout()
             string = ''.join(self.buffer).replace('shift+', '').strip()
 
@@ -84,30 +104,42 @@ class Switcher():
                     initial_layout == 'ru' and self.ngram_contain(string[:-1], self.ngrams_ru)):
                 return
 
+            translited = self.translit(''.join(self.buffer))
+            self.clipboard.set_text(translited, -1)
+            # time.sleep(0.2)
+
             for _ in self.buffer:
                 self.keyboard.send('backspace')
+            self.keyboard.send('ctrl+v')
+            self.keyboard.syn()
+            time.sleep(0.2)
 
             self.switch_layout()
-            self.keyboard_type(text=self.buffer)
+            # self.keyboard_type(text=self.buffer)
             self.keyboard.syn()
 
     def manual_process(self, char):
         """ No comments. """
-        print('manual_process', char)
+        # print('manual_process', char)
 
         if char in MSWITCH_KEYS:
-            time.sleep(0.2)
+            translited = self.translit(''.join(self.buffer))
+            self.clipboard.set_text(translited, -1)
+            # time.sleep(0.2)
 
             for _ in self.buffer:
                 self.keyboard.send('backspace')
+            self.keyboard.send('ctrl+v')
+            self.keyboard.syn()
+            time.sleep(0.25)
 
             self.switch_layout()
-            self.keyboard_type(text=self.buffer)
+            # self.keyboard_type(text=self.buffer)
             self.keyboard.syn()
 
     def update_buffer(self, char):
         """ No comments. """
-        print('char =', char)
+        # print('char =', char)
 
         if (char in RUS_CHARS + ENG_CHARS
                 and len(self.buffer) >= 2
@@ -136,7 +168,7 @@ class Switcher():
                 and char not in ('ctrl+shift', 'ctrl', 'shift', 'space')):
             self.buffer.clear()
 
-        print(self.buffer)
+        # print(self.buffer)
 
     def on_mouse_click(self, event):
         print('on_mouse_click')
@@ -144,7 +176,7 @@ class Switcher():
 
     def on_key_pressed(self, event):
         """ No comments. """
-        print('on_key_pressed =', event.key_char)
+        # print('on_key_pressed =', event.key_char)
         if event.type == 'up':
             key = event.key_char
             self.update_buffer(key)

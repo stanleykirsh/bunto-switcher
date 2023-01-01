@@ -69,18 +69,19 @@ class Keyboard:
 
     def syn(self):
         self.controller.syn()
+        # sleep(0.01)
 
     def press(self, char):
         """"""
         key_code = ecodes.ecodes[self._char_to_key(char)]
         self.controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
-        # self.controller.syn()
+        # sleep(0.01)
 
     def release(self, char):
         """"""
         key_code = ecodes.ecodes[self._char_to_key(char)]
         self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
-        # self.controller.syn()
+        sleep(0.02)
 
     def send(self, chars):
         """"""
