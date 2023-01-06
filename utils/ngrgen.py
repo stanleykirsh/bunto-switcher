@@ -1,7 +1,8 @@
-RUS_CHARS = """ё1234567890-=йцукенгшщзхъфывапролджэ\ячсмитьбю.Ё!"№;%:?*()_+ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭ/ЯЧСМИТЬБЮ,"""
-ENG_CHARS = """`1234567890-=qwertyuiop[]asdfghjkl;'\zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}ASDFGHJKL:"|ZXCVBNM<>?"""
+RUS_CHARS = """ё1234567890-=йцукенгшщзхъфывапролджэ\ячсмитьбю.Ё!"№;%:?*()_+ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭ/ЯЧСМИТЬБЮ, """
+ENG_CHARS = """`1234567890-=qwertyuiop[]asdfghjkl;'\zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}ASDFGHJKL:"|ZXCVBNM<>? """
 
-def strcontain(string:str, chars:str):
+
+def strcontain(string: str, chars: str):
     for char in chars:
         if char in string:
             return True
@@ -11,7 +12,8 @@ def strcontain(string:str, chars:str):
 ########################   RUS   #############################
 ##############################################################
 
-with open("./data/91502280.txt", "r") as f:
+
+with open("./data/tbp-ru.txt", "r") as f:
     text = f.read()
 
 text = text.lower()
@@ -21,101 +23,52 @@ text = text.replace("""\>""", '')
 text = text.replace(""" *""", '')
 text = text.replace("""   """, ' ')
 text = text.replace("""  """, ' ')
+text = text.replace('…', ' ')
 
-preprocessed = ''
-for char in text:
-    _RUS_CHARS = RUS_CHARS + ' '
-    _ENG_CHARS = ENG_CHARS + ' '
-    if char in _RUS_CHARS and char not in ('0123456789'):
-        preprocessed += _ENG_CHARS[_RUS_CHARS.find(char)]
-text = preprocessed
+text = text.lower()
+list_to_replace = str(set(RUS_CHARS) - set("""ёйцукенгшщзхъфывапролджэячсмитьбю""")) + '–—«»"'
+for char_to_replace in list_to_replace:
+    text = text.replace(char_to_replace, ' ')
+text = ' '.join(text.split())
 
-# 1-грамы
-print('# 1-грамы')
-rugrams1 = []
-for i in range(len(text)):
-    string = text[i:i+3]
-    if string[0] == ' ' and string[2] == ' ' and string[1].isalpha():
-        rugrams1.append(string[1])
-rugrams1 = list(set(rugrams1))
+ngrams_ru = []
+for window_size in (2, 3, 4):
+    for i in range(len(text)):
+        wtext = text[i:i+window_size]
 
-# 2-грамы
-print('# 2-грамы')
-rugrams2 = []
-for i in range(len(text)):
-    string = text[i:i+3]
-    if len(string) < 3:
-        continue
-    if (string[0] == ' '
-        and string[1] in ENG_CHARS
-            and string[2] in ENG_CHARS):
-        str12 = string[1:3]
-        if not strcontain(str12, """-_!%*=+\|()<>?/"""):
-            rugrams2.append(str12)
-rugrams2 = list(set(rugrams2))
+        isvalidchar = True
+        for char in wtext:
+            if char not in """ёйцукенгшщзхъфывапролджэячсмитьбю """:
+                isvalidchar = False
+                break
+        if not isvalidchar:
+            continue
 
-# 3-грамы
-print('# 3-грамы')
-rugrams3 = []
-for i in range(len(text)):
-    string = text[i:i+4]
-    if len(string) < 4:
-        continue
-    if (string[0] == ' '
-        and string[1] in ENG_CHARS
-        and string[2] in ENG_CHARS
-            and string[3] in ENG_CHARS):
-        str14 = string[1:4]
-        if not strcontain(str14, """-_!%*=+\|()<>?/"""):
-            rugrams3.append(str14)
-rugrams3 = list(set(rugrams3))
+        spcscnt =  wtext.count(' ')
+        if len(wtext) == 2 and spcscnt == 2:
+            continue
+        if spcscnt == 0:
+            ngrams_ru.append(wtext)
+        if spcscnt == 1 and (wtext[0] == ' ' or wtext[-1] == ' '):
+            ngrams_ru.append(wtext)
+        if spcscnt == 2 and (wtext[0] == ' ' and wtext[-1] == ' '):
+            ngrams_ru.append(wtext)
+ngrams_ru = list(set(ngrams_ru))
 
-# 4-грамы
-print('# 4-грамы')
-rugrams4 = []
-for i in range(len(text)):
-    string = text[i:i+5]
-    if len(string) < 5:
-        continue
-    if (string[0] == ' '
-        and string[1] in ENG_CHARS
-        and string[2] in ENG_CHARS
-        and string[3] in ENG_CHARS
-            and string[4] in ENG_CHARS):
-        str15 = string[1:5]
-        if not strcontain(str15, """-_!%*=+\|()<>?/"""):
-            rugrams4.append(str15)
-rugrams4 = list(set(rugrams4))
-
-# 5-грамы
-print('# 5-грамы')
-rugrams5 = []
-for i in range(len(text)):
-    string = text[i:i+6]
-    if len(string) < 6:
-        continue
-    if (string[0] == ' '
-        and string[1] in ENG_CHARS
-        and string[2] in ENG_CHARS
-        and string[3] in ENG_CHARS
-        and string[4] in ENG_CHARS
-            and string[5] in ENG_CHARS):
-        str16 = string[1:6]
-        if not strcontain(str16, """-_!%*=+\|()<>?/"""):
-            rugrams5.append(str16)
-rugrams5 = list(set(rugrams5))
-
-print(rugrams1, '\n', len(rugrams1))
-print(rugrams2, '\n', len(rugrams2))
-print(rugrams3, '\n', len(rugrams3))
-print(rugrams4, '\n', len(rugrams4))
-print(rugrams5, '\n', len(rugrams5))
+result = []
+for token in ngrams_ru:
+    translitted = ''
+    for char in token:
+        translitted += ENG_CHARS[RUS_CHARS.find(char)]
+    result.append(translitted)
+ngrams_ru = result
+#print(ngrams_ru)
 
 ##############################################################
 ########################   ENG   #############################
 ##############################################################
 
-with open("./data/en-tbp.txt", "r") as f:
+with open("./data/tbp-en.txt", "r") as f:
     text = f.read()
 
 text = text.lower()
@@ -125,191 +78,48 @@ text = text.replace("""\>""", '')
 text = text.replace(""" *""", '')
 text = text.replace("""   """, ' ')
 text = text.replace("""  """, ' ')
+text = text.replace('…', ' ')
 
-preprocessed = ''
-for char in text:
-    if char in (ENG_CHARS+' ') and not char.isdigit():
-        preprocessed += char
-text = preprocessed
+text = text.lower()
+list_to_replace = str(set(ENG_CHARS) - set("""qwertyuiopasdfghjklzxcvbnm"""))
+for char_to_replace in list_to_replace:
+    text = text.replace(char_to_replace, ' ')
+text = ' '.join(text.split())
 
-# 1-грамы
-print('# 1-грамы')
-engrams1 = []
-for i in range(len(text)):
-    string = text[i:i+3]
-    if string[0] == ' ' and string[2] == ' ' and string[1].isalpha():
-        engrams1.append(string[1])
-engrams1 = list(set(engrams1))
+ngrams_en = []
+for window_size in (2, 3, 4):
+    for i in range(len(text)):
+        wtext = text[i:i+window_size]
 
-# 2-грамы
-print('# 2-грамы')
-engrams2 = []
-for i in range(len(text)):
-    string = text[i:i+3]
-    if len(string) < 3:
-        continue
-    if (string[0] == ' '
-        and string[1] in ENG_CHARS
-            and string[2] in ENG_CHARS):
-        str12 = string[1:3]
-        if not strcontain(str12, """-_!%*=+\|()?/.,"""):
-            engrams2.append(str12)
-engrams2 = list(set(engrams2))
+        isvalidchar = True
+        for char in wtext:
+            if char not in """qwertyuiopasdfghjklzxcvbnm """:
+                isvalidchar = False
+                break
+        if not isvalidchar:
+            continue
 
-# 3-грамы
-print('# 3-грамы')
-engrams3 = []
-for i in range(len(text)):
-    string = text[i:i+4]
-    if len(string) < 4:
-        continue
-    if (string[0] == ' '
-        and string[1] in ENG_CHARS
-        and string[2] in ENG_CHARS
-            and string[3] in ENG_CHARS):
-        str14 = string[1:4]
-        if not strcontain(str14, """-_!%*=+\|()?/.,"""):
-            engrams3.append(str14)
-engrams3 = list(set(engrams3))
+        spcscnt =  wtext.count(' ')
+        if len(wtext) == 2 and spcscnt == 2:
+            continue
+        if spcscnt == 0:
+            ngrams_en.append(wtext)
+        if spcscnt == 1 and (wtext[0] == ' ' or wtext[-1] == ' '):
+            ngrams_en.append(wtext)
+        if spcscnt == 2 and (wtext[0] == ' ' and wtext[-1] == ' '):
+            ngrams_en.append(wtext)
+ngrams_en = list(set(ngrams_en))
+#print(ngrams_en)
 
-# 4-грамы
-print('# 4-грамы')
-engrams4 = []
-for i in range(len(text)):
-    string = text[i:i+5]
-    if len(string) < 5:
-        continue
-    if (string[0] == ' '
-        and string[1] in ENG_CHARS
-        and string[2] in ENG_CHARS
-        and string[3] in ENG_CHARS
-            and string[4] in ENG_CHARS):
-        str15 = string[1:5]
-        if not strcontain(str15, """-_!%*=+\|()?/.,"""):
-            engrams4.append(str15)
-engrams4 = list(set(engrams4))
+unique_ru = '\n'.join(list(set(ngrams_ru) - set(ngrams_en)))
+unique_en = '\n'.join(list(set(ngrams_en) - set(ngrams_ru)))
 
-# 5-грамы
-print('# 5-грамы')
-engrams5 = []
-for i in range(len(text)):
-    string = text[i:i+6]
-    if len(string) < 6:
-        continue
-    if (string[0] == ' '
-        and string[1] in ENG_CHARS
-        and string[2] in ENG_CHARS
-        and string[3] in ENG_CHARS
-        and string[4] in ENG_CHARS
-            and string[5] in ENG_CHARS):
-        str16 = string[1:6]
-        if not strcontain(str16, """-_!%*=+\|()?/.,"""):
-            engrams5.append(str16)
-engrams5 = list(set(engrams5))
+print(unique_ru)
+print(unique_en)
 
-print(engrams1, '\n', len(engrams1))
-print(engrams2, '\n', len(engrams2))
-print(engrams3, '\n', len(engrams3))
-print(engrams4, '\n', len(engrams4))
-print(engrams5, '\n', len(engrams5))
-
-##############################################################
-########################  MATCH  #############################
-##############################################################
-
-result_ru = ''
-result_en = ''
-
-for engram in engrams1:
-    if engram not in rugrams1:
-        result_en += f'{engram}\n'
-
-for rugram in rugrams1:
-    if rugram not in engrams1:
-        result_ru += f'{rugram}\n'
-    if rugram in engrams1:
-        _RUS_CHARS = RUS_CHARS + ' '
-        _ENG_CHARS = ENG_CHARS + ' '
-        rustr = ''
-        for char in rugram:
-            rustr += _RUS_CHARS[_ENG_CHARS.find(char)]
-        print(rugram, rustr)
-
-for engram in engrams2:
-    if engram not in rugrams2:
-        result_en += f'{engram}\n'
-
-for rugram in rugrams2:
-    if rugram not in engrams2:
-        result_ru += f'{rugram}\n'
-    if rugram in engrams2:
-        _RUS_CHARS = RUS_CHARS + ' '
-        _ENG_CHARS = ENG_CHARS + ' '
-        rustr = ''
-        for char in rugram:
-            rustr += _RUS_CHARS[_ENG_CHARS.find(char)]
-        print(rugram, rustr)
-
-for engram in engrams3:
-    if engram not in rugrams3:
-        result_en += f'{engram}\n'
-
-for rugram in rugrams3:
-    if rugram not in engrams3:
-        result_ru += f'{rugram}\n'
-    if rugram in engrams3:
-        _RUS_CHARS = RUS_CHARS + ' '
-        _ENG_CHARS = ENG_CHARS + ' '
-        rustr = ''
-        for char in rugram:
-            rustr += _RUS_CHARS[_ENG_CHARS.find(char)]
-        print(rugram, rustr)
-
-for engram in engrams4:
-    if engram not in rugrams4:
-        result_en += f'{engram}\n'
-
-for rugram in rugrams4:
-    if rugram not in engrams4:
-        result_ru += f'{rugram}\n'
-    if rugram in engrams4:
-        _RUS_CHARS = RUS_CHARS + ' '
-        _ENG_CHARS = ENG_CHARS + ' '
-        rustr = ''
-        for char in rugram:
-            rustr += _RUS_CHARS[_ENG_CHARS.find(char)]
-        print(rugram, rustr)
-
-for engram in engrams5:
-    if engram not in rugrams5:
-        result_en += f'{engram}\n'
-
-for rugram in rugrams5:
-    if rugram not in engrams5:
-        result_ru += f'{rugram}\n'
-    if rugram in engrams5:
-        _RUS_CHARS = RUS_CHARS + ' '
-        _ENG_CHARS = ENG_CHARS + ' '
-        rustr = ''
-        for char in rugram:
-            rustr += _RUS_CHARS[_ENG_CHARS.find(char)]
-        print(rugram, rustr)
-
-# рукотворные исключения
-# [TBD] то что после хеша надо удалять из противоположного списка
-# EN
-result_en += """the\n"""   # еру
-result_en += """pyt\n"""   # зне
-result_en += """at\n"""    # фе
-result_en += """no\n"""    # тщ
-result_en += """if\n"""    # ша
-result_en += """[]\n"""    # хъ
-
-# RU
-result_en += """k\n"""    # фе
 
 with open("./data/ngrams-ru.txt", "w") as f:
-    f.write(result_ru)
+    f.write(unique_ru)
 
 with open("./data/ngrams-en.txt", "w") as f:
-    f.write(result_en)
+    f.write(unique_en)
