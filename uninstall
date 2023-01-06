@@ -1,0 +1,8 @@
+#!/bin/bash
+
+echo uninstalling "bunto switcher"...
+
+rm -rf /usr/share/bunto
+rm -rf /usr/share/applications/bunto.desktop
+
+echo completed...

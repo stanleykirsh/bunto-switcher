@@ -1,18 +1,19 @@
+from gi.repository import Gtk, Gdk
 from parameters import SYS_SWITCH_KEY, ASWITCH_KEYS, MSWITCH_KEYS
 from parameters import RUS_CHARS, ENG_CHARS
 from keyboard.keyboard import Keyboard
 from mouse.mouse import Mouse
 from xkbgroup import XKeyboard
-from gi.repository import Gtk, Gdk
 
-import gi
+import os
 import time
 import parameters
 
-gi.require_version("Gtk", "3.0")
+import gi
+gi.require_version('Gtk', '3.0')
 
 
-class Switcher():
+class Switcher(Gtk.Window):
     """ No comments. """
 
     def __init__(self):
@@ -28,8 +29,9 @@ class Switcher():
 
         self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
 
-        self.ngrams_ru = self.load_ngrams(('./data/ngrams-ru.txt',))
-        self.ngrams_en = self.load_ngrams(('./data/ngrams-en.txt',))
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        self.ngrams_ru = self.load_ngrams((f'{dir_path}/data/ngrams-ru.txt',))
+        self.ngrams_en = self.load_ngrams((f'{dir_path}/data/ngrams-en.txt',))
 
     def load_ngrams(self, filenames):
         """ No comments. """
@@ -40,27 +42,29 @@ class Switcher():
                 result.extend(lines)
         return result
 
-    def ngram_contain_continuous(self, string, ngrams):
-        """ Проверяет содержится ли строка string в списке n-грам ngrams
-        в процессе ввода слова до того как будет введен разделитель.
+    def ngram_contain(self, string: str, ngrams: list):
+        """ Проверяет содержит ли строка string хотя бы одну из n-грам ngrams.
+        Эта функция предназначена для проверки при вводе разделителя типа пробела и т.д.
         """
-        string = string.lower()
         for ngram in ngrams:
-            if string == ngram:
+            if ngram in string:
                 return True
         return False
 
-    def ngram_contain_complete(self, string, ngrams):
+    '''
+    def ngram_contain(self, string: str, ngrams: list):
         """ Проверяет содержится ли строка string в списке n-грам ngrams
         при вводе разделителя типа пробела и т.д.
         """
-        string = string.lower()
         strlen = len(string)
+        string = string.lower()
         for ngram in reversed(ngrams):
             if ((strlen <= 5 and string == ngram) or
-                    (strlen > 5 and string.startswith(ngram))):
+                    (strlen > 5 and len(ngram) >= 5 and string.startswith(ngram))):
+                print(string, ngram)
                 return True
         return False
+    '''
 
     def get_layout(self):
         """ No comments. """
@@ -78,65 +82,55 @@ class Switcher():
             translited = ''.join(RU[US.find(s)] for s in string)
         return translited
 
-    def keyboard_type(self, text: list, delay: int = 0):
-        """ Печатает переданный список нажатий клавиш. """
-        for keys in text:
-            self.keyboard.send(keys)
-            time.sleep(delay)
-
     def switch_layout(self):
         """ No comments. """
         self.keyboard.send(SYS_SWITCH_KEY)
 
-    def auto_process(self, char):
+    def auto_process(self, char: str):
         """ No comments. """
-        #print('auto_process', char)
+        print('auto_process')
 
         if char in ASWITCH_KEYS:
-            #print('ASWITCH_KEYS', self.buffer)
+            print('ASWITCH_KEYS')
             initial_layout = self.get_layout()
             string = ''.join(self.buffer).replace('shift+', '').strip()
+            string = ' ' + string  # если первое слово в строке, то добавялем впереди пробел
 
-            if not (initial_layout == 'ru' and self.ngram_contain_complete(string, self.ngrams_en) or
-                    initial_layout == 'us' and self.ngram_contain_complete(string, self.ngrams_ru)):
+            if not (
+                    initial_layout == 'ru' and self.ngram_contain(string, self.ngrams_en) or
+                    initial_layout == 'us' and self.ngram_contain(string, self.ngrams_ru)):
                 return
 
             translited = self.translit(''.join(self.buffer))
             self.clipboard.set_text(translited, -1)
-            # time.sleep(0.2)
 
             for _ in self.buffer:
                 self.keyboard.send('backspace')
+
             self.keyboard.send('ctrl+v')
-            self.keyboard.syn()
+
             time.sleep(0.2)
-
             self.switch_layout()
-            # self.keyboard_type(text=self.buffer)
-            self.keyboard.syn()
+            # self.keyboard.write(text=self.buffer)
 
-    def manual_process(self, char):
+    def manual_process(self, char: str):
         """ No comments. """
-        # print('manual_process', char)
 
         if char in MSWITCH_KEYS:
             translited = self.translit(''.join(self.buffer))
             self.clipboard.set_text(translited, -1)
-            # time.sleep(0.2)
 
             for _ in self.buffer:
                 self.keyboard.send('backspace')
+
             self.keyboard.send('ctrl+v')
-            self.keyboard.syn()
-            time.sleep(0.25)
 
+            time.sleep(0.2)
             self.switch_layout()
-            # self.keyboard_type(text=self.buffer)
-            self.keyboard.syn()
+            # self.keyboard.write(text=self.buffer)
 
-    def update_buffer(self, char):
+    def update_buffer(self, char: str):
         """ No comments. """
-        # print('char =', char)
 
         if (char in RUS_CHARS + ENG_CHARS
                 and len(self.buffer) >= 2
@@ -165,15 +159,12 @@ class Switcher():
                 and char not in ('ctrl+shift', 'ctrl', 'shift', 'space')):
             self.buffer.clear()
 
-        # print(self.buffer)
-
     def on_mouse_click(self, event):
         print('on_mouse_click')
         self.buffer.clear()
 
     def on_key_pressed(self, event):
         """ No comments. """
-        # print('on_key_pressed =', event.key_char)
         if event.type == 'up':
             key = event.key_char
             self.update_buffer(key)

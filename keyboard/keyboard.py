@@ -5,7 +5,7 @@ from . import keymap
 
 
 class Event:
-    def __init__(self, key_code, key_name, key_char, event_type):
+    def __init__(self, key_code: str, key_name: str, key_char: str, event_type: str):
         """ No comments. """
         self.key_code = key_code
         self.key_name = key_name
@@ -67,23 +67,21 @@ class Keyboard:
                 sleep(5)
                 pass
 
-    def syn(self):
-        self.controller.syn()
-        # sleep(0.01)
-
-    def press(self, char):
+    def press(self, char: str):
         """"""
         key_code = ecodes.ecodes[self._char_to_key(char)]
         self.controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
-        # sleep(0.01)
+        self.controller.syn()
+        sleep(0.01)
 
-    def release(self, char):
+    def release(self, char: str):
         """"""
         key_code = ecodes.ecodes[self._char_to_key(char)]
         self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
-        sleep(0.02)
+        self.controller.syn()
+        sleep(0.01)
 
-    def send(self, chars):
+    def send(self, chars: str):
         """"""
         if chars == ' ':
             chars = 'space'
@@ -94,7 +92,7 @@ class Keyboard:
         for char in reversed(chars):
             self.release(char)
 
-    def write(self, text):
+    def write(self, text: str):
         """"""
         for char in text:
             self.send(char)

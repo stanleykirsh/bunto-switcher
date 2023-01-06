@@ -1,15 +1,14 @@
 #!/bin/bash
 
-echo install "bunto switcher"...
+echo installing "bunto switcher"...
 
-# Cоздаем папку приложения
-mkdir -p /usr/bin/bunto
-rm -r /usr/bin/bunto/*
+# Cоздаем папку приложения если еще не существует
+# Очищаем содержимое если папка уже существует
+mkdir -p /usr/share/bunto
+rm -rf /usr/share/bunto/*
 
 # Копируем файлы приложения
-cp bunto.py /usr/bin/bunto/bunto.py
-cp icon-mini-gray.png /usr/bin/bunto/icon-mini-gray.png
-cp -r pyperclip/ /usr/bin/bunto/
-cp -r keyboard/ /usr/bin/bunto/
+cp -R ./* /usr/share/bunto/
+cp ./bunto.desktop /usr/share/applications/
 
 echo completed...

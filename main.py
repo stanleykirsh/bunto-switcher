@@ -1,9 +1,9 @@
-#!/usr/bin/env python3.11
+#!/usr/bin/env python
 
 # Для правильной работы требуется установить расширение
 # https://extensions.gnome.org/extension/615/appindicator-support/
 # https://github.com/ubuntu/gnome-shell-extension-appindicator
-# 
+#
 # Возможно будет достаточно просто установить пакет libappindicator-*
 # https://packages.fedoraproject.org/pkgs/libappindicator/libappindicator/
 # sudo dnf install libappindicator-gtk3
@@ -12,18 +12,19 @@ import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('AppIndicator3', '0.1')
 
-import os
-from switcher import Switcher
-from gi.repository import AppIndicator3 as appindicator
 from gi.repository import Gtk as gtk
+from gi.repository import AppIndicator3 as appindicator
+
+import os
+import subprocess
+from switcher import Switcher
 
 APPINDICATOR_ID = 'buntoappindicator'
-
+dir_path = os.path.dirname(os.path.realpath(__file__))
 
 def main():
-    icon = 'flag-white.png'
-    indicator = appindicator.Indicator.new(APPINDICATOR_ID, 
-        os.path.abspath(icon), appindicator.IndicatorCategory.APPLICATION_STATUS)
+    icon = f'{dir_path}/flag-white.png'
+    indicator = appindicator.Indicator.new(APPINDICATOR_ID, os.path.abspath(icon), appindicator.IndicatorCategory.APPLICATION_STATUS)
     indicator.set_status(appindicator.IndicatorStatus.ACTIVE)
     indicator.set_menu(build_menu())
     gtk.main()
@@ -48,8 +49,8 @@ def settings(source):
 def quit(source):
     gtk.main_quit()
 
-
 if __name__ == "__main__":
+    # proc = subprocess.Popen(['sudo','python','switcher.py'])
     switcher = Switcher()
     switcher.start()
     main()
