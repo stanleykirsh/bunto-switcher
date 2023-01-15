@@ -46,6 +46,7 @@ class Switcher(Gtk.Window):
         """ Проверяет содержит ли строка string хотя бы одну из n-грам ngrams.
         Эта функция предназначена для проверки при вводе разделителя типа пробела и т.д.
         """
+        string = string.lower()
         for ngram in ngrams:
             if ngram in string:
                 return True
@@ -141,7 +142,9 @@ class Switcher(Gtk.Window):
             if self.keyboard.is_pressed('ctrl'):
                 return
             if self.keyboard.is_pressed('shift'):
-                char = 'shift+' + char
+                char = char.upper()
+            if self.keyboard.is_caps_locked():
+                char = char.upper()
             self.buffer.append(char)
             return
 
@@ -149,14 +152,14 @@ class Switcher(Gtk.Window):
             self.buffer.append(' ')
             return
 
-        # if char == 'backspace':
-        #    if self.buffer:
-        #        self.buffer.pop()
-        #    return
+        if char == 'backspace':
+           if self.buffer:
+               self.buffer.pop()
+           return
 
         if (char not in RUS_CHARS + ENG_CHARS
                 and char not in ASWITCH_KEYS + MSWITCH_KEYS
-                and char not in ('ctrl+shift', 'ctrl', 'shift', 'space')):
+                and char not in ('ctrl+shift', 'ctrl', 'shift', 'space', 'caps lock')):
             self.buffer.clear()
 
     def on_mouse_click(self, event):

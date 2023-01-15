@@ -103,6 +103,14 @@ class Keyboard:
             return True
         return False
 
+    def is_caps_locked(self):
+        """"""
+        leds = self.listener.leds(verbose=True)
+        for led in leds:
+            if led[0] == 'LED_CAPSL' and led[1] == 1:
+                return True
+        return False
+
     def _key_to_char(self, key_name):
         """"""
         for line in keymap.EV_KEYS:

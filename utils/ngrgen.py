@@ -16,6 +16,9 @@ def strcontain(string: str, chars: str):
 with open("./data/tbp-ru.txt", "r") as f:
     text = f.read()
 
+# добавим исключения
+text += """"""
+
 text = text.lower()
 text = text.replace("""\n""", '')
 text = text.replace("""\xa0""", '')
@@ -113,6 +116,17 @@ ngrams_en = list(set(ngrams_en))
 
 unique_ru = '\n'.join(list(set(ngrams_ru) - set(ngrams_en)))
 unique_en = '\n'.join(list(set(ngrams_en) - set(ngrams_ru)))
+
+'''
+# добавим исключения
+xtext = """python**at**the**, **. """
+for word in xtext.split('**'):
+    unique_ru.replace(word, '')
+
+xtext = """"""
+for word in xtext.split('**'):
+    unique_en.replace(word, '')
+'''
 
 print(unique_ru)
 print(unique_en)
