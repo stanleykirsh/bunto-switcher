@@ -52,6 +52,25 @@ class Switcher(Gtk.Window):
                 return True
         return False
 
+    def layout_prob(self, string: str):
+        """ No comments. """
+        string = string.lower()
+
+        prob_ru = 0
+        for ngram in self.ngrams_ru:
+            if ngram in string:
+                prob_ru += 1
+
+        prob_en = 0
+        for ngram in self.ngrams_en:
+            if ngram in string:
+                prob_en += 1
+
+        print(prob_ru, prob_en)
+        if prob_ru > prob_en: return 'ru'
+        if prob_ru < prob_en: return 'us'
+        if prob_ru == prob_en: return ''
+
     '''
     def ngram_contain(self, string: str, ngrams: list):
         """ Проверяет содержится ли строка string в списке n-грам ngrams
@@ -97,10 +116,15 @@ class Switcher(Gtk.Window):
             string = ''.join(self.buffer).replace('shift+', '').strip()
             string = ' ' + string  # если первое слово в строке, то добавялем впереди пробел
 
+            #if not (
+            #        initial_layout == 'ru' and self.ngram_contain(string, self.ngrams_en) or
+            #        initial_layout == 'us' and self.ngram_contain(string, self.ngrams_ru)):
+            #    return
+
             if not (
-                    initial_layout == 'ru' and self.ngram_contain(string, self.ngrams_en) or
-                    initial_layout == 'us' and self.ngram_contain(string, self.ngrams_ru)):
-                return
+                (self.layout_prob(string) == 'ru' and initial_layout == 'us') or
+                (self.layout_prob(string) == 'us' and initial_layout == 'ru')):
+               return
 
             translited = self.translit(''.join(self.buffer))
             self.clipboard.set_text(translited, -1)
