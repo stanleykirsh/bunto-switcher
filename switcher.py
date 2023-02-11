@@ -71,24 +71,16 @@ class Switcher(Gtk.Window):
         if prob_ru < prob_en: return 'us'
         if prob_ru == prob_en: return ''
 
-    '''
-    def ngram_contain(self, string: str, ngrams: list):
-        """ Проверяет содержится ли строка string в списке n-грам ngrams
-        при вводе разделителя типа пробела и т.д.
-        """
-        strlen = len(string)
-        string = string.lower()
-        for ngram in reversed(ngrams):
-            if ((strlen <= 5 and string == ngram) or
-                    (strlen > 5 and len(ngram) >= 5 and string.startswith(ngram))):
-                print(string, ngram)
-                return True
-        return False
-    '''
-
     def get_layout(self):
         """ No comments. """
         return self.xkb.group_symbol
+
+    def char_upper(self, char: str):
+        charid = ENG_CHARS.find(char)+47
+        if charid < len(ENG_CHARS):
+            return ENG_CHARS[charid]
+        else:
+            return char
 
     def translit(self, string: str):
         """ No comments. """
@@ -116,15 +108,15 @@ class Switcher(Gtk.Window):
             string = ''.join(self.buffer).replace('shift+', '').strip()
             string = ' ' + string  # если первое слово в строке, то добавялем впереди пробел
 
-            #if not (
+            # if not (
             #        initial_layout == 'ru' and self.ngram_contain(string, self.ngrams_en) or
             #        initial_layout == 'us' and self.ngram_contain(string, self.ngrams_ru)):
             #    return
 
             if not (
                 (self.layout_prob(string) == 'ru' and initial_layout == 'us') or
-                (self.layout_prob(string) == 'us' and initial_layout == 'ru')):
-               return
+                    (self.layout_prob(string) == 'us' and initial_layout == 'ru')):
+                return
 
             translited = self.translit(''.join(self.buffer))
             self.clipboard.set_text(translited, -1)
@@ -166,9 +158,9 @@ class Switcher(Gtk.Window):
             if self.keyboard.is_pressed('ctrl'):
                 return
             if self.keyboard.is_pressed('shift'):
-                char = char.upper()
+                char = self.char_upper(char)
             if self.keyboard.is_caps_locked():
-                char = char.upper()
+                char = self.char_upper(char)
             self.buffer.append(char)
             return
 
@@ -177,9 +169,9 @@ class Switcher(Gtk.Window):
             return
 
         if char == 'backspace':
-           if self.buffer:
-               self.buffer.pop()
-           return
+            if self.buffer:
+                self.buffer.pop()
+            return
 
         if (char not in RUS_CHARS + ENG_CHARS
                 and char not in ASWITCH_KEYS + MSWITCH_KEYS
