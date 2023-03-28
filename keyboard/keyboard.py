@@ -22,7 +22,15 @@ class Keyboard:
 
     def __init__(self):
         """"""
-        self._get_devices()
+        thread = Thread(
+            target=self._get_devices_periodically,
+            daemon=True)
+        thread.start()
+
+    def _get_devices_periodically(self):
+        while True:
+            self._get_devices()
+            sleep(60)
 
     def _get_devices(self):
         """"""
@@ -133,8 +141,10 @@ class Keyboard:
         """"""
         for devpath in self.devpaths:
             # создаем потоки с листенерами
-            thread = Thread(target=self._listener_loop, args=[
-                            callback, devpath], daemon=True)
+            thread = Thread(
+                target=self._listener_loop,
+                args=[callback, devpath],
+                daemon=True)
             thread.start()
 
 
