@@ -125,7 +125,7 @@ class Switcher(Gtk.Window):
                 self.keyboard.send('backspace')
 
             self.keyboard.send('ctrl+v')
-            self.clipboard.clear()
+            # self.clipboard.clear()
 
             time.sleep(0.2)
             self.switch_layout()
@@ -142,7 +142,7 @@ class Switcher(Gtk.Window):
                 self.keyboard.send('backspace')
 
             self.keyboard.send('ctrl+v')
-            self.clipboard.clear()
+            # self.clipboard.clear()
 
             time.sleep(0.2)
             self.switch_layout()
