@@ -1,8 +1,10 @@
-import gi
-gi.require_version('Gtk', '3.0')
-gi.require_version('AppIndicator3', '0.1')
+RUS_CHARS = """ё1234567890-=йцукенгшщзхъфывапролджэ\ячсмитьбю.Ё!"№;%:?*()_+ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭ/ЯЧСМИТЬБЮ,"""
+ENG_CHARS = """`1234567890-=qwertyuiop[]asdfghjkl;'\zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}ASDFGHJKL:"|ZXCVBNM<>?"""
 
-from gi.repository import Gtk as gtk
+SYS_SWITCH_KEY = 'ctrl+shift'
+ASWITCH_KEYS = ['space', 'tab']
+MSWITCH_KEYS = ['pause']
 
-def form_settings():
-    pass
+SWITCH_AUTO = True
+SWITCH_MANUAL = True
+SWITCH_TWOCAPS = True

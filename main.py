@@ -22,6 +22,17 @@ from switcher import Switcher
 APPINDICATOR_ID = 'buntoappindicator'
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
+settings = gtk.Settings.get_default()
+# getting all existing properties #
+#for i in settings.list_properties():
+#    #print(i)
+#    print(f'{i} == {settings.get_property(str(i.name))}')
+#gtk_theme_name = settings.get_property('gtk-theme-name')
+#settings.set_property("gtk-theme-name", gtk_theme_name)
+#settings.set_property("gtk-application-prefer-dark-theme", True)
+#settings.set_property("gtk-theme-name", "Numix")
+#settings.set_property("gtk-application-prefer-dark-theme", False)
+
 def main():
     icon = f'{dir_path}/flag-white.png'
     indicator = appindicator.Indicator.new(APPINDICATOR_ID, os.path.abspath(icon), appindicator.IndicatorCategory.APPLICATION_STATUS)

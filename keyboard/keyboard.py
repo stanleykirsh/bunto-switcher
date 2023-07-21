@@ -20,6 +20,10 @@ class Keyboard:
     listener = None
     devpaths = []
 
+    _KEY_DELAY = 0  # sec 0.01
+    _GETDEVICE_DELAY = 60  # sec 60
+    _EXCEPTION_DELAY = 5  # sec 5
+
     def __init__(self):
         """"""
         thread = Thread(
@@ -30,7 +34,7 @@ class Keyboard:
     def _get_devices_periodically(self):
         while True:
             self._get_devices()
-            sleep(60)
+            sleep(self._GETDEVICE_DELAY)
 
     def _get_devices(self):
         """"""
@@ -72,7 +76,7 @@ class Keyboard:
             except Exception as e:
                 print(e)
                 self.listener = None
-                sleep(5)
+                sleep(self._EXCEPTION_DELAY)
                 pass
 
     def press(self, char: str):
@@ -80,14 +84,14 @@ class Keyboard:
         key_code = ecodes.ecodes[self._char_to_key(char)]
         self.controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
         self.controller.syn()
-        sleep(0.01)
+        sleep(self._KEY_DELAY)
 
     def release(self, char: str):
         """"""
         key_code = ecodes.ecodes[self._char_to_key(char)]
         self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
         self.controller.syn()
-        sleep(0.01)
+        sleep(self._KEY_DELAY)
 
     def send(self, chars: str):
         """"""

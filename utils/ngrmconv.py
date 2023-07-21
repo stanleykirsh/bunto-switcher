@@ -1,6 +1,6 @@
 import time
 import subprocess
-from parameters import RUS_CHARS, ENG_CHARS
+from settings import RUS_CHARS, ENG_CHARS
 
 score = []
 
