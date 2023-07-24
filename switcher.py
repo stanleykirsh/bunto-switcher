@@ -1,6 +1,5 @@
 from gi.repository import Gtk, Gdk
 from settings import SYS_SWITCH_KEY, ASWITCH_KEYS, MSWITCH_KEYS
-from settings import RUS_CHARS, ENG_CHARS
 from keyboard.keyboard import Keyboard
 from mouse.mouse import Mouse
 from xkbgroup import XKeyboard
@@ -16,7 +15,10 @@ gi.require_version('Gtk', '3.0')
 class Switcher(Gtk.Window):
     """ No comments. """
 
-    _SWITCH_DELAY = 0.2  # 0.5 sec
+    _SWITCH_DELAY = 0.25  # 0.5 sec
+
+    _RUS_CHARS = """ё1234567890-=йцукенгшщзхъфывапролджэ\ячсмитьбю.Ё!"№;%:?*()_+ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭ/ЯЧСМИТЬБЮ,"""
+    _ENG_CHARS = """`1234567890-=qwertyuiop[]asdfghjkl;'\zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}ASDFGHJKL:"|ZXCVBNM<>?"""
 
     def __init__(self):
         """ No comments. """
@@ -56,7 +58,7 @@ class Switcher(Gtk.Window):
                 return True
         return False
 
-    def layout_prob(self, string: str):
+    def layout_probability(self, string: str):
         """ No comments. """
 
         string = string.lower()
@@ -87,17 +89,17 @@ class Switcher(Gtk.Window):
     def char_upper(self, char: str):
         """ No comments. """
 
-        charid = ENG_CHARS.find(char) + 47
-        if charid < len(ENG_CHARS):
-            return ENG_CHARS[charid]
+        charid = self._ENG_CHARS.find(char) + 47
+        if charid < len(self._ENG_CHARS):
+            return self._ENG_CHARS[charid]
         else:
             return char
 
     def translit(self, string: str):
         """ No comments. """
 
-        RU = str(RUS_CHARS+' ')
-        US = str(ENG_CHARS+' ')
+        RU = str(self._RUS_CHARS+' ')
+        US = str(self._ENG_CHARS+' ')
         initial_layout = self.get_layout()
         if initial_layout == 'ru':
             translited = ''.join(RU[US.find(s)] for s in string)
@@ -106,37 +108,37 @@ class Switcher(Gtk.Window):
             translited = ''.join(RU[US.find(s)] for s in string)
         return translited
 
-    def switch_required(self):
+    def kb_switch_required(self):
         """ No comments. """
 
         initial_layout = self.get_layout()
         string = ''.join(self.buffer).replace('shift+', '').strip()
         string = ' ' + string  # если первое слово в строке, то добавялем впереди пробел
 
-        probability = self.layout_prob(string)
+        probability = self.layout_probability(string)
         if ((probability == 'ru' and initial_layout == 'us')
                 or (probability == 'us' and initial_layout == 'ru')):
             return True
 
         return False
 
-    def switch_layout(self):
+    def kb_switch_layout(self):
         """ No comments. """
 
         self.keyboard.send(SYS_SWITCH_KEY)
 
-    def auto_process(self, char: str):
+    def kb_auto_process(self, char: str):
         """ No comments. """
 
-        # print('auto_process')
+        # print('kb_auto_process')
         if char in ASWITCH_KEYS:
             print('ASWITCH_KEYS')
 
-            if not self.switch_required():
+            if not self.kb_switch_required():
                 return
 
             if settings.SWITCH_TWOCAPS:
-                self.lower_leadings()
+                self.to_lower_leadings()
 
             translited = self.translit(''.join(self.buffer))
             self.clipboard.set_text(translited, -1)
@@ -151,16 +153,16 @@ class Switcher(Gtk.Window):
             # потому что если это сделать сразу то оболочка пытается одновременно выводить текст и переключать раскладку
             # и в результате зависает
             time.sleep(self._SWITCH_DELAY)
-            self.switch_layout()
+            self.kb_switch_layout()
             # self.keyboard.write(text=self.buffer)
 
-    def manual_process(self, char: str):
+    def kb_manual_process(self, char: str):
         """ No comments. """
 
         if char in MSWITCH_KEYS:
 
             if settings.SWITCH_TWOCAPS:
-                self.lower_leadings()
+                self.to_lower_leadings()
 
             translited = self.translit(''.join(self.buffer))
             self.clipboard.set_text(translited, -1)
@@ -175,10 +177,10 @@ class Switcher(Gtk.Window):
             # потому что если это сделать сразу то оболочка пытается одновременно выводить текст и переключать раскладку
             # и в результате зависает
             time.sleep(self._SWITCH_DELAY)
-            self.switch_layout()
+            self.kb_switch_layout()
             # self.keyboard.write(text=self.buffer)
 
-    def leading_caps_process(self, char: str):
+    def caps_auto_process(self, char: str):
         """ No comments. """
 
         # исправляем капсы только при инициализации ручного или автоматического переключения раскладки
@@ -187,22 +189,22 @@ class Switcher(Gtk.Window):
         if char not in ASWITCH_KEYS + MSWITCH_KEYS:
             return
 
-        # TBD
+        # если требуется переключение раскладки, то выходим
+        # капсы исправлятся в процедуре переключения
+        if self.kb_switch_required():
+            return
+
+        # если в буфере первые два символа не капсом,то выходим
         if not self.is_lower_leadings():
             return
 
-        # если требуется переключение раскладки, то выходим отсюда
-        # капсы исправлятся в процедуре переключения
-        if self.switch_required():
-            return
-
-        self.lower_leadings()
+        self.to_lower_leadings()
         string = ''.join(self.buffer)
         initial_layout = self.get_layout()
 
         if initial_layout == 'ru':
-            RU = str(RUS_CHARS+' ')
-            US = str(ENG_CHARS+' ')
+            RU = str(self._RUS_CHARS+' ')
+            US = str(self._ENG_CHARS+' ')
             string = ''.join(RU[US.find(s)] for s in string)
 
         self.clipboard.set_text(string, -1)
@@ -227,7 +229,7 @@ class Switcher(Gtk.Window):
 
         return False
 
-    def lower_leadings(self):
+    def to_lower_leadings(self):
         """ No comments. """
 
         if self.is_lower_leadings():
@@ -237,12 +239,12 @@ class Switcher(Gtk.Window):
     def update_buffer(self, char: str):
         """ No comments. """
 
-        if (char in RUS_CHARS + ENG_CHARS
+        if (char in self._RUS_CHARS + self._ENG_CHARS
                 and len(self.buffer) >= 2
                 and self.buffer[-1] == ' '):
             self.buffer.clear()
 
-        if char in RUS_CHARS + ENG_CHARS:
+        if char in self._RUS_CHARS + self._ENG_CHARS:
             if self.keyboard.is_pressed('ctrl'):
                 return
             if self.keyboard.is_pressed('shift'):
@@ -261,7 +263,7 @@ class Switcher(Gtk.Window):
                 self.buffer.pop()
             return
 
-        if (char not in RUS_CHARS + ENG_CHARS
+        if (char not in self._RUS_CHARS + self._ENG_CHARS
                 and char not in ASWITCH_KEYS + MSWITCH_KEYS
                 and char not in ('ctrl+shift', 'ctrl', 'shift', 'space', 'caps lock')):
             self.buffer.clear()
@@ -282,11 +284,11 @@ class Switcher(Gtk.Window):
 
         if event.type == 'up':
             if settings.SWITCH_TWOCAPS:
-                self.leading_caps_process(key)
+                self.caps_auto_process(key)
             if settings.SWITCH_MANUAL:
-                self.manual_process(key)
+                self.kb_manual_process(key)
             if settings.SWITCH_AUTO:
-                self.auto_process(key)
+                self.kb_auto_process(key)
 
     def start(self):
         """ No comments. """

@@ -54,8 +54,7 @@ def build_menu():
 
 
 def settings(source):
-    pass
-
+    subprocess.run(['xdg-open', 'settings.py'])
 
 def quit(source):
     gtk.main_quit()

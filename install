@@ -11,4 +11,9 @@ rm -rf /usr/share/bunto/*
 cp -R ./* /usr/share/bunto/
 cp ./bunto.desktop /usr/share/applications/
 
+# Устанавливаем зависимости
+yes | pip install evdev
+yes | pip install xkbgroup
+sudo dnf install dbus-x11 -y
+
 echo completed...

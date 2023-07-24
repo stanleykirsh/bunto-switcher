@@ -20,7 +20,7 @@ class Keyboard:
     listener = None
     devpaths = []
 
-    _KEY_DELAY = 0  # sec 0.01
+    _KEY_DELAY = 0.01  # sec 0.01
     _GETDEVICE_DELAY = 60  # sec 60
     _EXCEPTION_DELAY = 5  # sec 5
 
