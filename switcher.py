@@ -7,6 +7,7 @@ from xkbgroup import XKeyboard
 import os
 import time
 import settings
+import datetime
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -15,7 +16,7 @@ gi.require_version('Gtk', '3.0')
 class Switcher(Gtk.Window):
     """ No comments. """
 
-    _SWITCH_DELAY = 0.25  # 0.5 sec
+    _SWITCH_DELAY = 0.5  # 0.5 sec
 
     _RUS_CHARS = """ё1234567890-=йцукенгшщзхъфывапролджэ\ячсмитьбю.Ё!"№;%:?*()_+ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭ/ЯЧСМИТЬБЮ,"""
     _ENG_CHARS = """`1234567890-=qwertyuiop[]asdfghjkl;'\zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}ASDFGHJKL:"|ZXCVBNM<>?"""
@@ -73,7 +74,7 @@ class Switcher(Gtk.Window):
             if ngram in string:
                 prob_en += 1
 
-        print(prob_ru, prob_en)
+        # print(prob_ru, prob_en)
         if prob_ru > prob_en:
             return 'ru'
         if prob_ru < prob_en:
@@ -130,55 +131,55 @@ class Switcher(Gtk.Window):
     def kb_auto_process(self, char: str):
         """ No comments. """
 
-        # print('kb_auto_process')
-        if char in ASWITCH_KEYS:
-            print('ASWITCH_KEYS')
+        ts0 = datetime.datetime.now()
 
-            if not self.kb_switch_required():
-                return
+        if char not in ASWITCH_KEYS:
+            return
 
-            if settings.SWITCH_TWOCAPS:
-                self.to_lower_leadings()
+        if not self.kb_switch_required():
+            return
 
-            translited = self.translit(''.join(self.buffer))
-            self.clipboard.set_text(translited, -1)
+        translited = self.translit(''.join(self.buffer))
+        self.clipboard.set_text(translited, -1)
 
-            for _ in self.buffer:
-                self.keyboard.send('backspace')
+        for _ in self.buffer:
+            self.keyboard.send('backspace')
 
-            self.keyboard.send('ctrl+v')
-            # self.clipboard.clear()
+        self.keyboard.send('ctrl+v')
+        # self.clipboard.clear()
 
-            # перед переключением раскладки даем время оболочке обработать все [виртуально] нажатые клавиши
-            # потому что если это сделать сразу то оболочка пытается одновременно выводить текст и переключать раскладку
-            # и в результате зависает
-            time.sleep(self._SWITCH_DELAY)
-            self.kb_switch_layout()
-            # self.keyboard.write(text=self.buffer)
+        ts1 = datetime.datetime.now()
+        # print(ts1-ts0)
+        # print('====================')
+
+        # перед переключением раскладки даем время оболочке обработать все [виртуально] нажатые клавиши
+        # потому что если это сделать сразу то оболочка пытается одновременно выводить текст и переключать раскладку
+        # и в результате зависает
+        time.sleep(self._SWITCH_DELAY)
+        self.kb_switch_layout()
+        # self.keyboard.write(text=self.buffer)
 
     def kb_manual_process(self, char: str):
         """ No comments. """
 
-        if char in MSWITCH_KEYS:
+        if char not in MSWITCH_KEYS:
+            return
 
-            if settings.SWITCH_TWOCAPS:
-                self.to_lower_leadings()
+        translited = self.translit(''.join(self.buffer))
+        self.clipboard.set_text(translited, -1)
 
-            translited = self.translit(''.join(self.buffer))
-            self.clipboard.set_text(translited, -1)
+        for _ in self.buffer:
+            self.keyboard.send('backspace')
 
-            for _ in self.buffer:
-                self.keyboard.send('backspace')
+        self.keyboard.send('ctrl+v')
+        # self.clipboard.clear()
 
-            self.keyboard.send('ctrl+v')
-            # self.clipboard.clear()
-
-            # перед переключением раскладки даем время оболочке обработать все [виртуально] нажатые клавиши
-            # потому что если это сделать сразу то оболочка пытается одновременно выводить текст и переключать раскладку
-            # и в результате зависает
-            time.sleep(self._SWITCH_DELAY)
-            self.kb_switch_layout()
-            # self.keyboard.write(text=self.buffer)
+        # перед переключением раскладки даем время оболочке обработать все [виртуально] нажатые клавиши
+        # потому что если это сделать сразу то оболочка пытается одновременно выводить текст и переключать раскладку
+        # и в результате зависает
+        time.sleep(self._SWITCH_DELAY)
+        self.kb_switch_layout()
+        # self.keyboard.write(text=self.buffer)
 
     def caps_auto_process(self, char: str):
         """ No comments. """
@@ -189,16 +190,19 @@ class Switcher(Gtk.Window):
         if char not in ASWITCH_KEYS + MSWITCH_KEYS:
             return
 
-        # если требуется переключение раскладки, то выходим
-        # капсы исправлятся в процедуре переключения
-        if self.kb_switch_required():
-            return
-
         # если в буфере первые два символа не капсом,то выходим
-        if not self.is_lower_leadings():
+        if not self.is_upper_leadings():
             return
 
         self.to_lower_leadings()
+
+        # ######################
+        if (self.kb_switch_required() and char in ASWITCH_KEYS):
+            return
+
+        if char in MSWITCH_KEYS:
+            return
+
         string = ''.join(self.buffer)
         initial_layout = self.get_layout()
 
@@ -214,7 +218,7 @@ class Switcher(Gtk.Window):
 
         self.keyboard.send('ctrl+v')
 
-    def is_lower_leadings(self):
+    def is_upper_leadings(self):
         """ No comments. """
 
         string = ''.join(self.buffer)
@@ -222,7 +226,6 @@ class Switcher(Gtk.Window):
         if (True
             and len(string) >= 2
             and string[0:2].isupper()
-            and not string[2:].isupper()
             and not string.isupper()
             ):
             return True
@@ -232,9 +235,11 @@ class Switcher(Gtk.Window):
     def to_lower_leadings(self):
         """ No comments. """
 
-        if self.is_lower_leadings():
-            string = ''.join(self.buffer)
-            self.buffer = list(string[0] + string[1:].lower())
+        # if self.is_upper_leadings():
+        string = ''.join(self.buffer)
+        nonemptyid = len(string) - len(string.lstrip())
+        self.buffer = list(string[nonemptyid] +
+                           string[nonemptyid + 1:].lower())
 
     def update_buffer(self, char: str):
         """ No comments. """

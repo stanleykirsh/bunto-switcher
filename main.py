@@ -8,23 +8,22 @@
 # https://packages.fedoraproject.org/pkgs/libappindicator/libappindicator/
 # sudo dnf install libappindicator-gtk3
 
+from switcher import Switcher
+import subprocess
+import os
+from gi.repository import AppIndicator3 as appindicator
+from gi.repository import Gtk as gtk
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('AppIndicator3', '0.1')
 
-from gi.repository import Gtk as gtk
-from gi.repository import AppIndicator3 as appindicator
-
-import os
-import subprocess
-from switcher import Switcher
 
 APPINDICATOR_ID = 'buntoappindicator'
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
-settings = gtk.Settings.get_default()
+# settings = gtk.Settings.get_default()
 # getting all existing properties #
-#for i in settings.list_properties():
+# for i in settings.list_properties():
 #    #print(i)
 #    print(f'{i} == {settings.get_property(str(i.name))}')
 #gtk_theme_name = settings.get_property('gtk-theme-name')
@@ -33,9 +32,11 @@ settings = gtk.Settings.get_default()
 #settings.set_property("gtk-theme-name", "Numix")
 #settings.set_property("gtk-application-prefer-dark-theme", False)
 
+
 def main():
     icon = f'{dir_path}/flag-white.png'
-    indicator = appindicator.Indicator.new(APPINDICATOR_ID, os.path.abspath(icon), appindicator.IndicatorCategory.APPLICATION_STATUS)
+    indicator = appindicator.Indicator.new(APPINDICATOR_ID, os.path.abspath(
+        icon), appindicator.IndicatorCategory.APPLICATION_STATUS)
     indicator.set_status(appindicator.IndicatorStatus.ACTIVE)
     indicator.set_menu(build_menu())
     gtk.main()
@@ -54,13 +55,14 @@ def build_menu():
 
 
 def settings(source):
-    subprocess.run(['xdg-open', 'settings.py'])
+    subprocess.run(['xdg-open', '/usr/share/bunto/settings.py'])
+
 
 def quit(source):
     gtk.main_quit()
 
+
 if __name__ == "__main__":
-    # proc = subprocess.Popen(['sudo','python','switcher.py'])
     switcher = Switcher()
     switcher.start()
     main()

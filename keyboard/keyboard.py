@@ -20,7 +20,7 @@ class Keyboard:
     listener = None
     devpaths = []
 
-    _KEY_DELAY = 0.01  # sec 0.01
+    _KEY_DELAY = 0.008  # sec 0.008
     _GETDEVICE_DELAY = 60  # sec 60
     _EXCEPTION_DELAY = 5  # sec 5
 
@@ -107,7 +107,8 @@ class Keyboard:
     def write(self, text: str):
         """"""
         for char in text:
-            self.send(char)
+            self.press(char)
+            self.release(char)
 
     def is_pressed(self, key_char):
         """"""
