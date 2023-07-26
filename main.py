@@ -8,15 +8,17 @@
 # https://packages.fedoraproject.org/pkgs/libappindicator/libappindicator/
 # sudo dnf install libappindicator-gtk3
 
-from switcher import Switcher
-import subprocess
 import os
-from gi.repository import AppIndicator3 as appindicator
-from gi.repository import Gtk as gtk
+import subprocess
+
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('AppIndicator3', '0.1')
 
+from gi.repository import AppIndicator3 as appindicator
+from gi.repository import Gtk as gtk
+
+from switcher import Switcher
 
 APPINDICATOR_ID = 'buntoappindicator'
 dir_path = os.path.dirname(os.path.realpath(__file__))
