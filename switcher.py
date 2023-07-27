@@ -1,8 +1,8 @@
-from gi.repository import Gtk, Gdk
-from settings import SYS_SWITCH_KEY, ASWITCH_KEYS, MSWITCH_KEYS
-from keyboard.keyboard import Keyboard
-from mouse.mouse import Mouse
 from xkbgroup import XKeyboard
+from mouse.mouse import Mouse
+from keyboard.keyboard import Keyboard
+from settings import SYS_SWITCH_KEY, ASWITCH_KEYS, MSWITCH_KEYS
+from gi.repository import Gtk, Gdk
 
 import os
 import time
@@ -14,7 +14,7 @@ gi.require_version('Gtk', '3.0')
 
 
 class Switcher(Gtk.Window):
-    """ No comments. """
+    """"""
 
     _SWITCH_DELAY = 0.5  # 0.5 sec
 
@@ -22,7 +22,7 @@ class Switcher(Gtk.Window):
     _ENG_CHARS = """`1234567890-=qwertyuiop[]asdfghjkl;'\zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}ASDFGHJKL:"|ZXCVBNM<>?"""
 
     def __init__(self):
-        """ No comments. """
+        """"""
 
         self.xkb = XKeyboard()
         self.keyboard = Keyboard()
@@ -39,7 +39,7 @@ class Switcher(Gtk.Window):
         self.ngrams_en = self.load_ngrams((f'{dir_path}/data/ngrams-en.txt',))
 
     def load_ngrams(self, filenames):
-        """ No comments. """
+        """"""
 
         result = []
         for filename in filenames:
@@ -60,7 +60,7 @@ class Switcher(Gtk.Window):
         return False
 
     def layout_probability(self, string: str):
-        """ No comments. """
+        """"""
 
         string = string.lower()
 
@@ -83,12 +83,11 @@ class Switcher(Gtk.Window):
             return ''
 
     def get_layout(self):
-        """ No comments. """
-
+        """"""
         return self.xkb.group_symbol
 
     def char_upper(self, char: str):
-        """ No comments. """
+        """"""
 
         charid = self._ENG_CHARS.find(char) + 47
         if charid < len(self._ENG_CHARS):
@@ -97,7 +96,7 @@ class Switcher(Gtk.Window):
             return char
 
     def translit(self, string: str):
-        """ No comments. """
+        """"""
 
         RU = str(self._RUS_CHARS+' ')
         US = str(self._ENG_CHARS+' ')
@@ -110,7 +109,7 @@ class Switcher(Gtk.Window):
         return translited
 
     def kb_switch_required(self):
-        """ No comments. """
+        """"""
 
         initial_layout = self.get_layout()
         string = ''.join(self.buffer).replace('shift+', '').strip()
@@ -124,12 +123,12 @@ class Switcher(Gtk.Window):
         return False
 
     def kb_switch_layout(self):
-        """ No comments. """
+        """"""
 
         self.keyboard.send(SYS_SWITCH_KEY)
 
     def kb_auto_process(self, char: str):
-        """ No comments. """
+        """"""
 
         ts0 = datetime.datetime.now()
 
@@ -160,7 +159,7 @@ class Switcher(Gtk.Window):
         # self.keyboard.write(text=self.buffer)
 
     def kb_manual_process(self, char: str):
-        """ No comments. """
+        """"""
 
         if char not in MSWITCH_KEYS:
             return
@@ -182,7 +181,7 @@ class Switcher(Gtk.Window):
         # self.keyboard.write(text=self.buffer)
 
     def caps_auto_process(self, char: str):
-        """ No comments. """
+        """"""
 
         # исправляем капсы только при инициализации ручного или автоматического переключения раскладки
         # если зашли сюда НЕ по триггеру ручного или автоматического переключения, то выходим
@@ -219,7 +218,7 @@ class Switcher(Gtk.Window):
         self.keyboard.send('ctrl+v')
 
     def is_upper_leadings(self):
-        """ No comments. """
+        """"""
 
         string = ''.join(self.buffer)
 
@@ -233,16 +232,15 @@ class Switcher(Gtk.Window):
         return False
 
     def to_lower_leadings(self):
-        """ No comments. """
+        """"""
 
-        # if self.is_upper_leadings():
         string = ''.join(self.buffer)
         nonemptyid = len(string) - len(string.lstrip())
         self.buffer = list(string[nonemptyid] +
                            string[nonemptyid + 1:].lower())
 
     def update_buffer(self, char: str):
-        """ No comments. """
+        """"""
 
         if (char in self._RUS_CHARS + self._ENG_CHARS
                 and len(self.buffer) >= 2
@@ -274,13 +272,13 @@ class Switcher(Gtk.Window):
             self.buffer.clear()
 
     def on_mouse_click(self, event):
-        """ No comments. """
+        """"""
 
         print('on_mouse_click')
         self.buffer.clear()
 
     def on_key_pressed(self, event):
-        """ No comments. """
+        """"""
 
         key = event.key_char
 
@@ -296,7 +294,7 @@ class Switcher(Gtk.Window):
                 self.kb_auto_process(key)
 
     def start(self):
-        """ No comments. """
+        """"""
 
         self.mouse.on_button_event(self.on_mouse_click)
         self.keyboard.on_key_event(self.on_key_pressed)
