@@ -12,8 +12,16 @@ cp -R ./* /usr/share/bunto/
 cp ./bunto.desktop /usr/share/applications/
 
 # Устанавливаем зависимости
-yes | pip install evdev
-yes | pip install xkbgroup
+# appindicator
+sudo dnf install gnome-shell-extension-appindicator
+gnome-extensions enable appindicatorsupport@rgcjonas.gmail.com
+# релогин или перезагрузка может потребоваться после первого шага
+
+# evdev
+sudo dnf makecache
+sudo dnf install python3-evdev.x86_64
+
+# dbus-x11
 sudo dnf install dbus-x11 -y
 
 echo completed...

@@ -1,4 +1,5 @@
-from xkbgroup import XKeyboard
+import os
+import subprocess
 from mouse.mouse import Mouse
 from keyboard.keyboard import Keyboard
 from settings import SYS_SWITCH_KEY, ASWITCH_KEYS, MSWITCH_KEYS
@@ -16,7 +17,12 @@ gi.require_version('Gtk', '3.0')
 class Switcher(Gtk.Window):
     """"""
 
-    _SWITCH_DELAY = 0.5  # 0.5 sec
+    # перед переключением раскладки даем время оболочке обработать все [виртуально] нажатые клавиши
+    # потому что если это сделать сразу то оболочка пытается одновременно выводить текст и переключать раскладку
+    # и в результате зависает
+    # для Xorg:     0.5 sec
+    # для Wayland:  0.0 sec
+    _SWITCH_DELAY = 0.0
 
     _RUS_CHARS = """ё1234567890-=йцукенгшщзхъфывапролджэ\ячсмитьбю.Ё!"№;%:?*()_+ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭ/ЯЧСМИТЬБЮ,"""
     _ENG_CHARS = """`1234567890-=qwertyuiop[]asdfghjkl;'\zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}ASDFGHJKL:"|ZXCVBNM<>?"""
@@ -24,7 +30,6 @@ class Switcher(Gtk.Window):
     def __init__(self):
         """"""
 
-        self.xkb = XKeyboard()
         self.keyboard = Keyboard()
         self.mouse = Mouse()
 
@@ -37,6 +42,8 @@ class Switcher(Gtk.Window):
         dir_path = os.path.dirname(os.path.realpath(__file__))
         self.ngrams_ru = self.load_ngrams((f'{dir_path}/data/ngrams-ru.txt',))
         self.ngrams_en = self.load_ngrams((f'{dir_path}/data/ngrams-en.txt',))
+
+        self.username = os.environ['SUDO_USER']
 
     def load_ngrams(self, filenames):
         """"""
@@ -61,8 +68,9 @@ class Switcher(Gtk.Window):
 
     def layout_probability(self, string: str):
         """"""
-
         string = string.lower()
+
+        print(f'={string}=')
 
         prob_ru = 0
         for ngram in self.ngrams_ru:
@@ -74,7 +82,8 @@ class Switcher(Gtk.Window):
             if ngram in string:
                 prob_en += 1
 
-        # print(prob_ru, prob_en)
+        print(prob_ru, prob_en)
+
         if prob_ru > prob_en:
             return 'ru'
         if prob_ru < prob_en:
@@ -84,7 +93,14 @@ class Switcher(Gtk.Window):
 
     def get_layout(self):
         """"""
-        return self.xkb.group_symbol
+        # это работало в Xorg
+        # print('get_layout', self.xkb.group_symbol)
+        # return self.xkb.group_symbol
+        # это по идее должно работать в X + Wayland
+        get_mru_sources = f'sudo -u {self.username} gsettings get org.gnome.desktop.input-sources mru-sources'.split()
+        result = subprocess.run(get_mru_sources, stdout=subprocess.PIPE)
+        result = result.stdout.decode('utf-8')[10:12]
+        return result
 
     def char_upper(self, char: str):
         """"""
@@ -130,8 +146,6 @@ class Switcher(Gtk.Window):
     def kb_auto_process(self, char: str):
         """"""
 
-        ts0 = datetime.datetime.now()
-
         if char not in ASWITCH_KEYS:
             return
 
@@ -147,13 +161,6 @@ class Switcher(Gtk.Window):
         self.keyboard.send('ctrl+v')
         # self.clipboard.clear()
 
-        ts1 = datetime.datetime.now()
-        # print(ts1-ts0)
-        # print('====================')
-
-        # перед переключением раскладки даем время оболочке обработать все [виртуально] нажатые клавиши
-        # потому что если это сделать сразу то оболочка пытается одновременно выводить текст и переключать раскладку
-        # и в результате зависает
         time.sleep(self._SWITCH_DELAY)
         self.kb_switch_layout()
         # self.keyboard.write(text=self.buffer)
@@ -223,10 +230,10 @@ class Switcher(Gtk.Window):
         string = ''.join(self.buffer)
 
         if (True
-            and len(string) >= 2
-            and string[0:2].isupper()
-            and not string.isupper()
-            ):
+                and len(string) >= 2
+                and string[0:2].isupper()
+                and not string.isupper()
+                ):
             return True
 
         return False
