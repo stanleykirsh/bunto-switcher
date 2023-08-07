@@ -3,69 +3,58 @@ from threading import Thread
 from evdev import InputDevice, UInput, list_devices, ecodes, categorize
 from . import keymap
 
-
 class Event:
+    
     def __init__(self, key_code: str, key_name: str, key_char: str, event_type: str):
-        """ No comments. """
+        """"""
         self.key_code = key_code
         self.key_name = key_name
         self.key_char = key_char
         self.type = event_type
 
-
 class Keyboard:
 
-    callback = None
     controller = None
     listener = None
-    devpaths = []
+    devpath = None
+    devthread = None
 
-    _KEY_DELAY = 0.005  # sec 0.005
-    _GETDEVICE_DELAY = 60  # sec 60
-    _EXCEPTION_DELAY = 5  # sec 5
+    _KEY_DELAY = 0.005      # sec 0.005
+    _GETDEVICE_DELAY = 30   # sec 30
+    _EXCEPTION_DELAY = 5    # sec 5
+    _TERMINATION_SIGN = False
 
     def __init__(self):
         """"""
-        thread = Thread(
-            target=self._get_devices_periodically,
-            daemon=True)
-        thread.start()
+        pass
 
-    def _get_devices_periodically(self):
-        while True:
-            self._get_devices()
-            sleep(self._GETDEVICE_DELAY)
-
-    def _get_devices(self):
-        """"""
-        for path in list_devices():
-            try:
-                listener = InputDevice(path)
-                if (ecodes.KEY_BACKSPACE in listener.capabilities()[ecodes.EV_KEY]
-                        and listener.name != 'py-evdev-uinput'):
-                    print('обнаружено устройство типа клавиатура:', path)
-                    self.devpaths.append(listener.path)
-            except:
-                pass
-
-    def _listener_loop(self, callback, devpath):
+    def _main_loop(self, callback):  
         """"""
         while True:
+            try:                
+                # Stop main thread if exist.
+                if self.devthread:
+                    self._TERMINATION_SIGN = True
+                    self.devthread.join()
+                    self._TERMINATION_SIGN = False
+                # (Re)create main thread in any case. 
+                # If device configuration has been changed then it resets in every _GETDEVICE_DELAY seconds.
+                self.devpath = self._get_devices()
+                self.listener = InputDevice(self.devpath)
+                self.controller = UInput.from_device(self.devpath)
+                self.devthread = Thread(target=self._listener_loop, args=(callback,))
+                self.devthread.start()
+                sleep(self._GETDEVICE_DELAY)
+            except Exception as e:
+                print(f'Exception in _main_loop: {e}')
+                sleep(self._EXCEPTION_DELAY)            
+
+    def _listener_loop(self, callback):
+        """"""
+        while not self._TERMINATION_SIGN:
             try:
-                ##############################################
-                if not self.listener:
-                    listener = InputDevice(devpath)
-                else:
-                    listener = self.listener
-                ##############################################
-                for event in listener.read_loop():
-                    if event.type == ecodes.EV_KEY:
-                        ######################################
-                        if not self.listener:
-                            self.listener = InputDevice(devpath)
-                        if not self.controller:
-                            self.controller = UInput.from_device(devpath)
-                        ######################################
+                for event in self.listener.read_loop():
+                    if event.type == ecodes.EV_KEY:                        
                         categorized = str(categorize(event)).split()
                         key_code = categorized[4]
                         key_name = categorized[5][1:-2]
@@ -74,10 +63,30 @@ class Keyboard:
                         callback(
                             Event(key_code, key_name, key_char, event_type))
             except Exception as e:
-                print(e)
-                self.listener = None
+                print(f'Exception in _listener_loop: {e}')   
                 sleep(self._EXCEPTION_DELAY)
-                pass
+
+    def _get_devices(self):
+        """"""
+        devpaths = []
+        for path in list_devices():
+            try:
+                listener = InputDevice(path)
+                if (ecodes.KEY_BACKSPACE in listener.capabilities()[ecodes.EV_KEY]
+                        and listener.name != 'py-evdev-uinput'):
+                    print('обнаружено устройство типа клавиатура:', path)
+                    devpaths.append(listener.path)
+            except Exception as e:
+                pass 
+        return devpaths[0]
+
+    def on_key_event(self, callback):
+        """"""
+        thread = Thread(
+            target=self._main_loop,
+            args=(callback,),
+            daemon=True)
+        thread.start()
 
     def press(self, char: str):
         """"""
@@ -142,19 +151,8 @@ class Keyboard:
             if line[1] == char.lower():
                 return line[3]
 
-    def on_key_event(self, callback):
-        """"""
-        for devpath in self.devpaths:
-            # создаем потоки с листенерами
-            thread = Thread(
-                target=self._listener_loop,
-                args=[callback, devpath],
-                daemon=True)
-            thread.start()
-
-
 ### DEBUG ###
-'''
+"""
 def test(event):
     print(event)
 
@@ -162,5 +160,5 @@ def test(event):
 k = Keyboard()
 k.on_key_event(test)
 input()
-'''
+"""
 # DEBUG ###
