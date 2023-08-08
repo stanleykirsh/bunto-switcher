@@ -36,13 +36,14 @@ class Switcher(Gtk.Window):
         self.ngrams_ru = []
         self.ngrams_en = []
 
-        self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+        self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)        
 
         dir_path = os.path.dirname(os.path.realpath(__file__))
         self.ngrams_ru = self.load_ngrams((f'{dir_path}/data/ngrams-ru.txt',))
         self.ngrams_en = self.load_ngrams((f'{dir_path}/data/ngrams-en.txt',))
 
         self.username = os.environ['SUDO_USER']
+        self.initial_layout = self.get_layout()
 
     def load_ngrams(self, filenames):
         """"""
@@ -115,24 +116,22 @@ class Switcher(Gtk.Window):
 
         RU = str(self._RUS_CHARS+' ')
         US = str(self._ENG_CHARS+' ')
-        initial_layout = self.get_layout()
-        if initial_layout == 'ru':
+        if self.initial_layout == 'ru':
             translited = ''.join(RU[US.find(s)] for s in string)
             translited = ''.join(US[RU.find(s)] for s in translited)
-        if initial_layout == 'us':
+        if self.initial_layout == 'us':
             translited = ''.join(RU[US.find(s)] for s in string)
         return translited
 
     def kb_switch_required(self):
         """"""
 
-        initial_layout = self.get_layout()
         string = ''.join(self.buffer).replace('shift+', '').strip()
         string = ' ' + string  # если первое слово в строке, то добавялем впереди пробел
 
         probability = self.layout_probability(string)
-        if ((probability == 'ru' and initial_layout == 'us')
-                or (probability == 'us' and initial_layout == 'ru')):
+        if ((probability == 'ru' and self.initial_layout == 'us')
+                or (probability == 'us' and self.initial_layout == 'ru')):
             return True
 
         return False
@@ -162,7 +161,6 @@ class Switcher(Gtk.Window):
 
         time.sleep(self._SWITCH_DELAY)
         self.kb_switch_layout()
-        # self.keyboard.write(text=self.buffer)
 
     def kb_manual_process(self, char: str):
         """"""
@@ -184,7 +182,6 @@ class Switcher(Gtk.Window):
         # и в результате зависает
         time.sleep(self._SWITCH_DELAY)
         self.kb_switch_layout()
-        # self.keyboard.write(text=self.buffer)
 
     def caps_auto_process(self, char: str):
         """"""
@@ -209,9 +206,8 @@ class Switcher(Gtk.Window):
             return
 
         string = ''.join(self.buffer)
-        initial_layout = self.get_layout()
 
-        if initial_layout == 'ru':
+        if self.initial_layout == 'ru':
             RU = str(self._RUS_CHARS+' ')
             US = str(self._ENG_CHARS+' ')
             string = ''.join(RU[US.find(s)] for s in string)
@@ -281,6 +277,7 @@ class Switcher(Gtk.Window):
         """"""
 
         print('on_mouse_click')
+        self.initial_layout = self.get_layout()
         self.buffer.clear()
 
     def on_key_pressed(self, event):
@@ -298,6 +295,8 @@ class Switcher(Gtk.Window):
                 self.kb_manual_process(key)
             if settings.SWITCH_AUTO:
                 self.kb_auto_process(key)
+            if key in settings.SYS_SWITCH_KEY:
+                self.initial_layout = self.get_layout()
 
     def start(self):
         """"""
