@@ -4,6 +4,7 @@ from evdev import InputDevice, ecodes, categorize, list_devices
 
 
 class Event:
+
     def __init__(self, key_code, key_name, key_char, event_type):
         """ No comments. """
         self.key_code = key_code
@@ -14,60 +15,81 @@ class Event:
 
 class Mouse:
 
-    callback = None
-    listener = None
-    devpaths = []
+    devthreads = []
+
+    _GETDEVICE_DELAY = 30   # sec 30
+    _EXCEPTION_DELAY = 5    # sec 5
+    _TERMINATION_SIGN = False
 
     def __init__(self):
         """"""
-        self._get_devices()
+        pass
 
-    def _get_devices(self):
-        """"""
-        for path in list_devices():
-            listener = InputDevice(path)
-            try:
-                if (ecodes.BTN_MOUSE in listener.capabilities()[ecodes.EV_KEY]
-                        and listener.name != 'py-evdev-uinput'):
-                    print('обнаружено устройство типа мышь:', path)
-                    self.devpaths.append(listener.path)
-            except:
-                pass
-
-    def _listener_loop(self, callback, devpath):
+    def _main_loop(self, callback):
         """"""
         while True:
             try:
-                ##############################################
-                if not self.listener:
+                # Stop working threads if exist.
+                for devthread in self.devthreads:
+                    if devthread:
+                        self._TERMINATION_SIGN = True
+                        devthread.join()
+                        self._TERMINATION_SIGN = False
+                # (Re)create main thread in any case.
+                # If device configuration has been changed then it resets in every _GETDEVICE_DELAY seconds.
+                for devpath in self._get_devices():
                     listener = InputDevice(devpath)
-                else:
-                    listener = self.listener
-                ##############################################
+                    thread = Thread(
+                        target=self._listener_loop, args=(callback, listener,))
+                    thread.start()
+                    self.devthreads.append(thread)
+                sleep(self._GETDEVICE_DELAY)
+            except Exception as e:
+                print(f'Exception in mouse _main_loop: {e}')
+                sleep(self._EXCEPTION_DELAY)
+
+    def _listener_loop(self, callback, listener):
+        """"""
+        while not self._TERMINATION_SIGN:
+            try:
                 for event in listener.read_loop():
                     if event.type == ecodes.EV_KEY:
-                        ######################################
-                        if not self.listener:
-                            self.listener = InputDevice(devpath)
-                        ######################################
                         categorized = str(categorize(event))
-                        if 'BTN_LEFT' in categorized:
-                            callback(Event('272', 'BTN_LEFT', 'left button', categorized[-1]))
-                        if 'BTN_MIDDLE' in categorized:
-                            callback(Event('274', 'BTN_MIDDLE', 'middle button', categorized[-1]))
-                        if 'BTN_RIGHT' in categorized:
-                            callback(Event('273', 'BTN_RIGHT', 'right button', categorized[-1]))
+                        if 'BTN_LEFT' in categorized and 'down' in categorized:
+                            callback(Event('272', 'BTN_LEFT',
+                                     'left button', categorized[-1]))
+                        if 'BTN_MIDDLE' in categorized and 'down' in categorized:
+                            callback(Event('274', 'BTN_MIDDLE',
+                                     'middle button', categorized[-1]))
+                        if 'BTN_RIGHT' in categorized and 'down' in categorized:
+                            callback(Event('273', 'BTN_RIGHT',
+                                     'right button', categorized[-1]))
             except Exception as e:
-                print(e)
-                self.listener = None
-                sleep(5)
+                print(f'Exception in mouse _listener_loop: {e}')
+                sleep(self._EXCEPTION_DELAY)
+
+    def _get_devices(self):
+        """"""
+        devpaths = []
+        for path in list_devices():
+            try:
+                listener = InputDevice(path)
+                if (ecodes.BTN_MOUSE in listener.capabilities()[ecodes.EV_KEY]
+                        and listener.name != 'py-evdev-uinput'):
+                    print('обнаружено устройство типа мышь:', path)
+                    devpaths.append(listener.path)
+            except:
                 pass
+        return devpaths
 
     def on_button_event(self, callback):
-        for devpath in self.devpaths:
-            thread = Thread(target=self._listener_loop, args=[
-                            callback, devpath], daemon=True)
-            thread.start()
+        """"""
+        # Run main loop in its own thread for async work all the rest.
+        thread = Thread(
+            target=self._main_loop,
+            args=(callback,),
+            daemon=True)
+        thread.start()
 
 
 ### DEBUG ###

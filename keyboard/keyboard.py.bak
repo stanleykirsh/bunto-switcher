@@ -1,5 +1,4 @@
 from time import sleep
-from time import time as TM
 from threading import Thread
 from evdev import InputDevice, UInput, list_devices, ecodes, categorize
 from . import keymap
@@ -17,12 +16,12 @@ class Event:
 
 class Keyboard:
 
-    controllers = []
-    listeners = []
-    devthreads = []
-    devpaths = []
+    controller = None
+    listener = None
+    devpath = None
+    devthread = None
 
-    _KEY_DELAY = 0.004      # sec 0.004
+    _KEY_DELAY = 0.005      # sec 0.005
     _GETDEVICE_DELAY = 30   # sec 30
     _EXCEPTION_DELAY = 5    # sec 5
     _TERMINATION_SIGN = False
@@ -36,36 +35,28 @@ class Keyboard:
         while True:
             try:
                 # Stop working thread if exist.
-                for devthread in self.devthreads:
-                    if devthread:
-                        self._TERMINATION_SIGN = True
-                        devthread.join()
-                        self._TERMINATION_SIGN = False
-                self.controllers = []
-                self.listeners = []
-                self.devthreads = []
-                self.devpaths = []
+                if self.devthread:
+                    self._TERMINATION_SIGN = True
+                    self.devthread.join()
+                    self._TERMINATION_SIGN = False
                 # (Re)create main thread in any case.
                 # If device configuration has been changed then it resets in every _GETDEVICE_DELAY seconds.
-                for devpath in self._get_devices():
-                    listener = InputDevice(devpath)
-                    controller = UInput.from_device(devpath)
-                    thread = Thread(
-                        target=self._listener_loop, args=(callback, listener,))
-                    thread.start()
-                    self.listeners.append(listener)
-                    self.controllers.append(controller)
-                    self.devthreads.append(thread)
+                self.devpath = self._get_devices()
+                self.listener = InputDevice(self.devpath)
+                self.controller = UInput.from_device(self.devpath)
+                self.devthread = Thread(
+                    target=self._listener_loop, args=(callback,))
+                self.devthread.start()
                 sleep(self._GETDEVICE_DELAY)
             except Exception as e:
                 print(f'Exception in keyboard _main_loop: {e}')
                 sleep(self._EXCEPTION_DELAY)
 
-    def _listener_loop(self, callback, listener):
+    def _listener_loop(self, callback):
         """"""
         while not self._TERMINATION_SIGN:
             try:
-                for event in listener.read_loop():
+                for event in self.listener.read_loop():
                     if event.type == ecodes.EV_KEY:
                         categorized = str(categorize(event)).split()
                         key_code = categorized[4]
@@ -90,69 +81,57 @@ class Keyboard:
                     devpaths.append(listener.path)
             except Exception as e:
                 pass
-        return devpaths
+        return devpaths[0]
 
     def on_key_event(self, callback):
         """"""
-        # Run main loop in its own thread for async work all the rest.
+        #Run main loop in its own thread for async work all the rest.
         thread = Thread(
             target=self._main_loop,
             args=(callback,),
             daemon=True)
         thread.start()
 
-    def _call_async_and_await(self, func, args):
-        threads = []
-        for controller in self.controllers:
-            args = args + (controller,)
-            thread = Thread(
-                target=func,
-                args=args)
-            thread.start()
-            threads.append(thread)
-        for thread in threads:
-            thread.join()
-
-    def _press(self, char: str, controller):
+    def press(self, char: str):
         """"""
         key_code = ecodes.ecodes[self._char_to_key(char)]
-        controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
-        controller.syn()
+        self.controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
+        self.controller.syn()
         sleep(self._KEY_DELAY)
 
-    def _release(self, char: str, controller):
+    def release(self, char: str):
         """"""
         key_code = ecodes.ecodes[self._char_to_key(char)]
-        controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
-        controller.syn()
+        self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
+        self.controller.syn()
         sleep(self._KEY_DELAY)
 
-    def _send(self, chars: str, controller):
+    def send(self, chars: str):
         """"""
         if chars == ' ':
             chars = 'space'
 
         chars = chars.split('+')
         for char in chars:
-            self._press(char, controller)
+            self.press(char)
         for char in reversed(chars):
-            self._release(char, controller)
+            self.release(char)
 
-    def _write(self, text: str, controller):
+    def write(self, text: str):
         """"""
         for char in text:
-            self._press(char, controller)
-            self._release(char, controller)
+            self.press(char)
+            self.release(char)
 
-    def _is_pressed(self, key_char, listener):
+    def is_pressed(self, key_char):
         """"""
-        if self._char_to_code(key_char) in listener.active_keys(verbose=False):
+        if self._char_to_code(key_char) in self.listener.active_keys(verbose=False):
             return True
         return False
 
-    def _is_caps_locked(self, listener):
+    def is_caps_locked(self):
         """"""
-        leds = listener.leds(verbose=True)
+        leds = self.listener.leds(verbose=True)
         for led in leds:
             if led[0] == 'LED_CAPSL' and led[1] == 1:
                 return True
@@ -175,36 +154,6 @@ class Keyboard:
         for line in keymap.EV_KEYS:
             if line[1] == char.lower():
                 return line[3]
-
-    def press(self, char: str):
-        """"""
-        self._call_async_and_await(self._press, (char,))
-
-    def release(self, char: str):
-        """"""
-        self._call_async_and_await(self._release, (char,))
-
-    def send(self, chars: str):
-        """"""
-        self._call_async_and_await(self._send, (chars,))
-
-    def write(self, text: str):
-        """"""
-        self._call_async_and_await(self._send, (text,))
-
-    def is_pressed(self, key_char):
-        """"""
-        for listener in self.listeners:
-            if self._is_pressed(key_char, listener):
-                return True
-        return False
-
-    def is_caps_locked(self):
-        """"""
-        for listener in self.listeners:
-            if self._is_caps_locked(listener):
-                return True
-        return False
 
 
 ### DEBUG ###

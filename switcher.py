@@ -8,7 +8,6 @@ from gi.repository import Gtk, Gdk
 import os
 import time
 import settings
-import datetime
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -20,7 +19,7 @@ class Switcher(Gtk.Window):
     # перед переключением раскладки даем время оболочке обработать все [виртуально] нажатые клавиши
     # потому что если это сделать сразу то оболочка пытается одновременно выводить текст и переключать раскладку
     # и в результате зависает
-    # для Xorg:     0.5 sec
+    # для X11:      0.5 sec
     # для Wayland:  0.0 sec
     _SWITCH_DELAY = 0.0
 
@@ -93,10 +92,10 @@ class Switcher(Gtk.Window):
 
     def get_layout(self):
         """"""
-        # это работало в Xorg
+        # это работало в X11
         # print('get_layout', self.xkb.group_symbol)
         # return self.xkb.group_symbol
-        # это по идее должно работать в X + Wayland
+        # это по идее должно работать в X11 + Wayland
         get_mru_sources = f'sudo -u {self.username} gsettings get org.gnome.desktop.input-sources mru-sources'.split()
         result = subprocess.run(get_mru_sources, stdout=subprocess.PIPE)
         result = result.stdout.decode('utf-8')[10:12]
