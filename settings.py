@@ -5,3 +5,5 @@ MSWITCH_KEYS = ['pause']
 SWITCH_AUTO = True
 SWITCH_MANUAL = True
 SWITCH_TWOCAPS = True
+
+IGNORE_WORDS = ''''''

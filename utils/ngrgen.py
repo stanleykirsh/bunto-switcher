@@ -15,7 +15,7 @@ def strcontain(string: str, chars: str):
 # из результирующего файла ngrams-ru.txt надо вручную удалить все строки вида " ,", ", ", " , " и т.д.
 # иначе из-за них срабатвает автопереключение после ввода запятой в правильной английской раскладке "hello, " => "руддщб".
 
-with open("./data/tbp-ru.txt", "r") as f:
+with open("./data/mart-ru.txt", "r") as f:
     text = f.read()
 
 # добавим исключения
@@ -73,7 +73,7 @@ ngrams_ru = result
 ########################   ENG   #############################
 ##############################################################
 
-with open("./data/tbp-en.txt", "r") as f:
+with open("./data/mart-en.txt", "r") as f:
     text = f.read()
 
 text = text.lower()

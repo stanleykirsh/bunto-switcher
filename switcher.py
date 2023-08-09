@@ -36,7 +36,7 @@ class Switcher(Gtk.Window):
         self.ngrams_ru = []
         self.ngrams_en = []
 
-        self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)        
+        self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
 
         dir_path = os.path.dirname(os.path.realpath(__file__))
         self.ngrams_ru = self.load_ngrams((f'{dir_path}/data/ngrams-ru.txt',))
@@ -55,22 +55,20 @@ class Switcher(Gtk.Window):
                 result.extend(lines)
         return result
 
-    def ngram_contain(self, string: str, ngrams: list):
-        """ Проверяет содержит ли строка string хотя бы одну из n-грам ngrams.
-        Эта функция предназначена для проверки при вводе разделителя типа пробела и т.д.
-        """
-
-        string = string.lower()
-        for ngram in ngrams:
-            if ngram in string:
-                return True
-        return False
-
     def layout_probability(self, string: str):
         """"""
+
+        STRIP_US = ''',./<>?`~!@#$%^&*()_-=+|[]{};:'"'''
+        STRIP_RU = '''@#$^&/?'''
+
         string = string.lower()
+        for s in STRIP_US + STRIP_RU:
+            string = string.replace(s, ' ')
 
         print(f'={string}=')
+
+        if string in settings.IGNORE_WORDS.split('|'):
+            return ''
 
         prob_ru = 0
         for ngram in self.ngrams_ru:
@@ -97,6 +95,7 @@ class Switcher(Gtk.Window):
         # print('get_layout', self.xkb.group_symbol)
         # return self.xkb.group_symbol
         # это по идее должно работать в X11 + Wayland
+        time.sleep(0.1)
         get_mru_sources = f'sudo -u {self.username} gsettings get org.gnome.desktop.input-sources mru-sources'.split()
         result = subprocess.run(get_mru_sources, stdout=subprocess.PIPE)
         result = result.stdout.decode('utf-8')[10:12]
@@ -116,6 +115,8 @@ class Switcher(Gtk.Window):
 
         RU = str(self._RUS_CHARS+' ')
         US = str(self._ENG_CHARS+' ')
+
+        # self.initial_layout = self.get_layout()
         if self.initial_layout == 'ru':
             translited = ''.join(RU[US.find(s)] for s in string)
             translited = ''.join(US[RU.find(s)] for s in translited)
@@ -126,9 +127,10 @@ class Switcher(Gtk.Window):
     def kb_switch_required(self):
         """"""
 
-        string = ''.join(self.buffer).replace('shift+', '').strip()
-        string = ' ' + string  # если первое слово в строке, то добавялем впереди пробел
+        string = ''.join(self.buffer).replace('shift+', '')  # .strip()
+        # string = ' ' + string  # если первое слово в строке, то добавялем впереди пробел
 
+        # self.initial_layout = self.get_layout()
         probability = self.layout_probability(string)
         if ((probability == 'ru' and self.initial_layout == 'us')
                 or (probability == 'us' and self.initial_layout == 'ru')):
@@ -161,13 +163,14 @@ class Switcher(Gtk.Window):
 
         time.sleep(self._SWITCH_DELAY)
         self.kb_switch_layout()
+        self.initial_layout = self.get_layout()
 
     def kb_manual_process(self, char: str):
         """"""
-
         if char not in MSWITCH_KEYS:
             return
 
+        # self.initial_layout = self.get_layout()
         translited = self.translit(''.join(self.buffer))
         self.clipboard.set_text(translited, -1)
 
@@ -177,11 +180,9 @@ class Switcher(Gtk.Window):
         self.keyboard.send('ctrl+v')
         # self.clipboard.clear()
 
-        # перед переключением раскладки даем время оболочке обработать все [виртуально] нажатые клавиши
-        # потому что если это сделать сразу то оболочка пытается одновременно выводить текст и переключать раскладку
-        # и в результате зависает
         time.sleep(self._SWITCH_DELAY)
         self.kb_switch_layout()
+        self.initial_layout = self.get_layout()
 
     def caps_auto_process(self, char: str):
         """"""
@@ -207,6 +208,7 @@ class Switcher(Gtk.Window):
 
         string = ''.join(self.buffer)
 
+        # self.initial_layout = self.get_layout()
         if self.initial_layout == 'ru':
             RU = str(self._RUS_CHARS+' ')
             US = str(self._ENG_CHARS+' ')
@@ -225,10 +227,10 @@ class Switcher(Gtk.Window):
         string = ''.join(self.buffer)
 
         if (True
-                and len(string) >= 2
-                and string[0:2].isupper()
-                and not string.isupper()
-                ):
+            and len(string) >= 2
+            and string[0:2].isupper()
+            and not string.isupper()
+            ):
             return True
 
         return False
@@ -275,14 +277,12 @@ class Switcher(Gtk.Window):
 
     def on_mouse_click(self, event):
         """"""
-
         print('on_mouse_click')
         self.initial_layout = self.get_layout()
         self.buffer.clear()
 
     def on_key_pressed(self, event):
         """"""
-
         key = event.key_char
 
         if event.type == 'down':
@@ -295,7 +295,7 @@ class Switcher(Gtk.Window):
                 self.kb_manual_process(key)
             if settings.SWITCH_AUTO:
                 self.kb_auto_process(key)
-            if key in settings.SYS_SWITCH_KEY:
+            if key in (settings.SYS_SWITCH_KEY).split('+'):
                 self.initial_layout = self.get_layout()
 
     def start(self):
