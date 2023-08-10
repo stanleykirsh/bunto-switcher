@@ -95,7 +95,7 @@ class Switcher(Gtk.Window):
         # print('get_layout', self.xkb.group_symbol)
         # return self.xkb.group_symbol
         # это по идее должно работать в X11 + Wayland
-        time.sleep(0.1)
+        time.sleep(0.05)
         get_mru_sources = f'sudo -u {self.username} gsettings get org.gnome.desktop.input-sources mru-sources'.split()
         result = subprocess.run(get_mru_sources, stdout=subprocess.PIPE)
         result = result.stdout.decode('utf-8')[10:12]
@@ -246,6 +246,8 @@ class Switcher(Gtk.Window):
     def update_buffer(self, char: str):
         """"""
 
+        print(char)
+        print(self.buffer)     
         if (char in self._RUS_CHARS + self._ENG_CHARS
                 and len(self.buffer) >= 2
                 and self.buffer[-1] == ' '):
@@ -264,6 +266,10 @@ class Switcher(Gtk.Window):
         if char == 'space':
             self.buffer.append(' ')
             return
+
+        if char == 'tab':
+            self.buffer.append(' ')
+            return        
 
         if char == 'backspace':
             if self.buffer:

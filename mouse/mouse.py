@@ -1,5 +1,5 @@
 from time import sleep
-from threading import Thread
+from threading import Thread, currentThread
 from evdev import InputDevice, ecodes, categorize, list_devices
 
 
@@ -15,7 +15,9 @@ class Event:
 
 class Mouse:
 
+    listeners = []
     devthreads = []
+    lastdevid = 0
 
     _GETDEVICE_DELAY = 30   # sec 30
     _EXCEPTION_DELAY = 5    # sec 5
@@ -29,19 +31,25 @@ class Mouse:
         """"""
         while True:
             try:
-                # Stop working threads if exist.
+                # Stop working thread if exist.
+                self._TERMINATION_SIGN = True
                 for devthread in self.devthreads:
-                    if devthread:
-                        self._TERMINATION_SIGN = True
-                        devthread.join()
-                        self._TERMINATION_SIGN = False
+                    devthread.join()
+                self._TERMINATION_SIGN = False
+
+                self.listeners = []
+                self.devthreads = []
+
                 # (Re)create main thread in any case.
                 # If device configuration has been changed then it resets in every _GETDEVICE_DELAY seconds.
-                for devpath in self._get_devices():
+                for devid, devpath in enumerate(self._get_devices()):
                     listener = InputDevice(devpath)
                     thread = Thread(
-                        target=self._listener_loop, args=(callback, listener,))
+                        target=self._listener_loop,
+                        args=(callback, listener,),
+                        name=str(devid))
                     thread.start()
+                    self.listeners.append(listener)
                     self.devthreads.append(thread)
                 sleep(self._GETDEVICE_DELAY)
             except Exception as e:
@@ -53,6 +61,7 @@ class Mouse:
         while not self._TERMINATION_SIGN:
             try:
                 for event in listener.read_loop():
+                    self.lastdevid = int(currentThread().name)
                     if event.type == ecodes.EV_KEY:
                         categorized = str(categorize(event))
                         if 'BTN_LEFT' in categorized and 'down' in categorized:
