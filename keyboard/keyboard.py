@@ -21,8 +21,9 @@ class Keyboard:
     devthreads = []
 
     lastdevid = 0
+    controller = None
 
-    _KEY_DELAY = 0.005      # sec 0.004
+    _KEY_DELAY = 0.005      # sec 0.005
     _GETDEVICE_DELAY = 30   # sec 30
     _EXCEPTION_DELAY = 5    # sec 5
     _TERMINATION_SIGN = False
@@ -70,6 +71,7 @@ class Keyboard:
             try:
                 for event in listener.read_loop():
                     self.lastdevid = int(currentThread().name)
+                    self.controller = self.controllers[self.lastdevid]
                     if event.type == ecodes.EV_KEY:
                         categorized = str(categorize(event)).split()
                         key_code = categorized[4]
@@ -105,50 +107,45 @@ class Keyboard:
             daemon=True)
         thread.start()
 
-    def _call_async_and_await(self, func, args):
-        threads = []
-        for controller in self.controllers:
-            args = args + (controller,)
-            thread = Thread(
-                target=func,
-                args=args)
-            thread.start()
-            threads.append(thread)
-        for thread in threads:
-            thread.join()
-
-    def press(self, char: str):
+    def press(self, char: str, duration: float = 0, external_call: bool = True):
         """"""
-        controller = self.controllers[self.lastdevid]
         key_code = ecodes.ecodes[self._char_to_key(char)]
-        controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
-        controller.syn()
-        sleep(self._KEY_DELAY)
+        self.controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
+        if external_call:
+            self.controller.syn()
+            sleep(duration)
 
-    def release(self, char: str):
+    def release(self, char: str, duration: float = 0, external_call: bool = True):
         """"""
-        controller = self.controllers[self.lastdevid]
         key_code = ecodes.ecodes[self._char_to_key(char)]
-        controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
-        controller.syn()
-        sleep(self._KEY_DELAY)
+        self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
+        if external_call:
+            self.controller.syn()
+            sleep(duration)
 
-    def send(self, chars: str):
+    def send(self, chars: str | list, duration=_KEY_DELAY):
         """"""
         if chars == ' ':
             chars = 'space'
 
         chars = chars.split('+')
         for char in chars:
-            self.press(char)
-        for char in reversed(chars):
-            self.release(char)
+            self.press(char, duration, external_call=False)
+        self.controller.syn()
+        sleep(duration)
 
-    def write(self, text: str):
+        for char in reversed(chars):
+            self.release(char, duration, external_call=False)
+        self.controller.syn()
+
+    def write(self, text: str | list, duration=_KEY_DELAY):
         """"""
         for char in text:
-            self.press(char)
-            self.release(char)
+            self.press(char, duration, external_call=False)
+            self.controller.syn()
+            sleep(duration)
+            self.release(char, duration, external_call=False)
+            self.controller.syn()
 
     def is_pressed(self, key_char):
         """"""
