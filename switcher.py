@@ -137,8 +137,9 @@ class Switcher(Gtk.Window):
 
         string = ''.join(self.buffer[:-1])
         string = self.translit(string)
-        string = string + {'space': ' ', 'tab': '\t',
-                           'enter': '\r\n'}[self.buffer[-1]]
+        string_ends = {'space': ' ', 'tab': '\t', 'enter': '\r\n'}
+        if self.buffer[-1] in string_ends:
+            string = string + string_ends[self.buffer[-1]]    
 
         self.clipboard.set_text(string, -1)
         self.keyboard.grab()
@@ -153,11 +154,12 @@ class Switcher(Gtk.Window):
             return
 
         self.delete_last_word()
-
+        
         string = ''.join(self.buffer[:-1])
         string = self.translit(string)
-        string = string + {'space': ' ', 'tab': '\t',
-                           'enter': '\r\n'}[self.buffer[-1]]      
+        string_ends = {'space': ' ', 'tab': '\t', 'enter': '\r\n'}
+        if self.buffer[-1] in string_ends:
+            string = string + string_ends[self.buffer[-1]]      
 
         self.clipboard.set_text(string, -1)
         self.keyboard.grab()
@@ -190,8 +192,9 @@ class Switcher(Gtk.Window):
             US = str(self._ENG_CHARS+' ')
             string = ''.join(RU[US.find(s)] for s in string)        
         
-        string = string + {'space': ' ', 'tab': '\t',
-                           'enter': '\r\n'}[self.buffer[-1]]
+        string_ends = {'space': ' ', 'tab': '\t', 'enter': '\r\n'}
+        if self.buffer[-1] in string_ends:
+            string = string + string_ends[self.buffer[-1]] 
 
         self.clipboard.set_text(string, -1)
         self.keyboard.grab()

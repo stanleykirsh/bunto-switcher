@@ -62,7 +62,6 @@ class Keyboard:
                 sleep(self._GETDEVICE_DELAY)
 
             except Exception as e:                
-                self.ungrab()
                 print(f'Exception in keyboard _main_loop: {e}')                
                 sleep(self._EXCEPTION_DELAY)
 
@@ -82,7 +81,6 @@ class Keyboard:
                         callback(
                             Event(key_code, key_name, key_char, event_type))
             except Exception as e:
-                self.ungrab()
                 print(f'Exception in keyboard _listener_loop: {e}')
                 sleep(self._EXCEPTION_DELAY)
 
