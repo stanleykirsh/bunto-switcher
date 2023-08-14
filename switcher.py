@@ -1,10 +1,10 @@
 from mouse.mouse import Mouse
 from keyboard.keyboard import Keyboard
-from settings import SYS_SWITCH_KEY, ASWITCH_KEYS, MSWITCH_KEYS
+from settings import SYS_SWITCH_KEY
 from gi.repository import Gtk, Gdk
+from threading import Timer
 
 import os
-import time
 import settings
 import subprocess
 
@@ -24,6 +24,10 @@ class Switcher(Gtk.Window):
 
     _RUS_CHARS = """ё1234567890-=йцукенгшщзхъфывапролджэ\ячсмитьбю.Ё!"№;%:?*()_+ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭ/ЯЧСМИТЬБЮ,"""
     _ENG_CHARS = """`1234567890-=qwertyuiop[]asdfghjkl;'\zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}ASDFGHJKL:"|ZXCVBNM<>?"""
+
+    _ASWITCH_KEYS = ['space', 'tab']
+    _MSWITCH_KEYS = ['pause']
+
 
     def __init__(self):
         """"""
@@ -61,10 +65,10 @@ class Switcher(Gtk.Window):
         for s in STRIP_US + STRIP_RU:
             string = string.replace(s, ' ')
 
-        print(f'={string}=')
-
         if string in settings.IGNORE_WORDS.split('|'):
             return ''
+
+        print(string)
 
         prob_ru = 0
         for ngram in self.ngrams_ru:
@@ -117,7 +121,81 @@ class Switcher(Gtk.Window):
             translited = ''.join(RU[US.find(s)] for s in string)
         return translited
 
-    def kb_switch_required(self):
+    def kb_switch_layout(self):
+        """"""
+        self.keyboard.send(SYS_SWITCH_KEY)
+
+    def kb_auto_process(self, char: str):
+        """"""
+        if char not in self._ASWITCH_KEYS:
+            return
+
+        if not self.lang_fix_required():
+            return
+
+        self.delete_last_word()
+
+        string = ''.join(self.buffer[:-1])
+        string = self.translit(string)
+        string = string + {'space': ' ', 'tab': '\t',
+                           'enter': '\r\n'}[self.buffer[-1]]
+
+        self.clipboard.set_text(string, -1)
+        self.keyboard.send('ctrl+v')
+        self.kb_switch_layout()
+        Timer(0.1, self.get_layout).start()
+
+    def kb_manual_process(self, char: str):
+        """"""
+        if char not in self._MSWITCH_KEYS:
+            return
+
+        self.delete_last_word()
+
+        string = ''.join(self.buffer)
+        string = self.translit(string)
+
+        self.clipboard.set_text(string, -1)
+        self.keyboard.send('ctrl+v')
+        self.kb_switch_layout()
+        Timer(0.1, self.get_layout).start()
+
+    def caps_auto_process(self, char: str):
+        """"""
+        if char not in self._MSWITCH_KEYS + self._ASWITCH_KEYS:
+            return
+
+        # если в буфере первые два символа не капсом,то выходим
+        if not self.upper_fix_required():
+            return
+
+        ###############################
+        string = ''.join(self.buffer[:-1])
+        string = string[0] + string[1:].lower()
+        self.buffer = list(string) + [self.buffer[-1]]
+
+        if self.initial_layout == 'ru':
+            RU = str(self._RUS_CHARS+' ')
+            US = str(self._ENG_CHARS+' ')
+            string = ''.join(RU[US.find(s)] for s in string)
+
+        ################################
+
+        if char not in self._MSWITCH_KEYS + self._ASWITCH_KEYS:
+            return
+
+        if char in self._ASWITCH_KEYS and self.lang_fix_required():
+            return
+
+        self.delete_last_word()
+        
+        string = string + {'space': ' ', 'tab': '\t',
+                           'enter': '\r\n'}[self.buffer[-1]]
+
+        self.clipboard.set_text(string, -1)
+        self.keyboard.send('ctrl+v')
+
+    def lang_fix_required(self):
         """"""
         string = ''.join(self.buffer)
         string = string.replace('shift+', '')
@@ -129,96 +207,7 @@ class Switcher(Gtk.Window):
             return True
         return False
 
-    def kb_switch_layout(self):
-        """"""
-        self.keyboard.send(SYS_SWITCH_KEY)
-
-    def kb_auto_process(self, char: str):
-        """"""
-        if char not in ASWITCH_KEYS:
-            return
-
-        if not self.kb_switch_required():
-            return
-
-        self.delete_last_word(2 if self.buffer[-1] in ('enter') else 1)
-
-        string = ''.join(self.buffer[:-1])
-        string = self.translit(string)
-        string = string + {'space': ' ', 'tab': '\t',
-                           'enter': '\r\n'}[self.buffer[-1]]
-
-        self.clipboard.set_text(string, -1)
-        self.keyboard.send('ctrl+v')
-        self.kb_switch_layout()
-        time.sleep(0.05)
-        self.get_layout()
-
-    def kb_manual_process(self, char: str):
-        """"""
-        if char not in MSWITCH_KEYS:
-            return
-
-        self.delete_last_word(2 if self.buffer[-1] in ('enter') else 1)
-
-        string = ''.join(self.buffer[:-1])
-        string = self.translit(string)
-        string = string + {'space': ' ', 'tab': '\t',
-                           'enter': '\r\n'}[self.buffer[-1]]
-
-        self.clipboard.set_text(string, -1)
-        self.keyboard.send('ctrl+v')
-        self.kb_switch_layout()
-        time.sleep(0.05)
-        self.get_layout()
-
-    def caps_auto_process(self, char: str):
-        """"""
-        # исправляем капсы только при инициализации ручного или автоматического переключения раскладки
-        # если зашли сюда НЕ по триггеру ручного или автоматического переключения, то выходим
-        # капсы исправлятся в процедуре переключения
-        if char not in ASWITCH_KEYS + MSWITCH_KEYS:
-            return
-
-        # если в буфере первые два символа не капсом,то выходим
-        if not self.is_upper_leadings():
-            return
-
-        ###############################
-        string = ''.join(self.buffer[:-1]).lower()
-
-        if self.initial_layout == 'ru':
-            RU = str(self._RUS_CHARS+' ')
-            US = str(self._ENG_CHARS+' ')
-            string = ''.join(RU[US.find(s)] for s in string)
-
-        self.buffer = list(string) + [self.buffer[-1]]
-        ################################
-
-        # ######################
-        if (self.kb_switch_required() and char in ASWITCH_KEYS):
-            return
-
-        if char in MSWITCH_KEYS:
-            return
-
-        # string = ''.join(self.buffer[:-1]).lower()
-
-        # if self.initial_layout == 'ru':
-        #     RU = str(self._RUS_CHARS+' ')
-        #     US = str(self._ENG_CHARS+' ')
-        #     string = ''.join(RU[US.find(s)] for s in string)
-
-        # self.buffer = list(string) + [self.buffer[-1]]
-        string = string + {'space': ' ', 'tab': '\t',
-                           'enter': '\r\n'}[self.buffer[-1]]
-
-        print(f'string =={string}==')
-        self.clipboard.set_text(string, -1)
-        self.delete_last_word(2 if self.buffer[-1] in ('enter') else 1)
-        self.keyboard.send('ctrl+v')
-
-    def is_upper_leadings(self):
+    def upper_fix_required(self):
         """"""
         string = ''.join(self.buffer)
         if (True
@@ -237,8 +226,20 @@ class Switcher(Gtk.Window):
                            'enter': '\r\n'}[self.buffer[-1]]
         self.buffer = list(string)
 
-    def delete_last_word(self, count: int = 1):
-        for _ in range(count):
+    def delete_last_word(self):
+        """"""
+        special_chars = [
+            "`", "[", "]", ";", "'", ",", ".", "/",
+            "~", "{", "}", ":", '"', "<", ">", "?",
+            ]        
+        # проверяем что хотя бы одно значение из bad_chars имеется в буфере
+        # OC нестабильно удаляет по ctrl+space последнее слово которое содержат эти символы
+        # поэтому такие слова удаляем медленным но надежным backspace
+        if any(map(lambda v: v in self.buffer, special_chars)):
+            for _ in self.buffer:
+                self.keyboard.send('backspace')
+        # если буфер не содержит особых символов, то удалем быстрым способом
+        else:
             self.keyboard.send('ctrl+backspace')
 
     def update_buffer(self, char: str):
@@ -247,6 +248,7 @@ class Switcher(Gtk.Window):
         if (char in self._RUS_CHARS + self._ENG_CHARS
                 and len(self.buffer) >= 2
                 and self.buffer[-1] in ('space', 'tab', 'enter')):
+            print('buffer.clear 1')
             self.buffer.clear()
 
         if char in self._RUS_CHARS + self._ENG_CHARS:
@@ -268,10 +270,11 @@ class Switcher(Gtk.Window):
             if self.buffer:
                 self.buffer.pop()
             return
-
+        
         if (char not in self._RUS_CHARS + self._ENG_CHARS
-                and char not in ASWITCH_KEYS + MSWITCH_KEYS
+                and char not in self._ASWITCH_KEYS + self._MSWITCH_KEYS
                 and char not in ('ctrl', 'shift', 'space', 'caps lock')):
+            print('buffer.clear 2')
             self.buffer.clear()
 
     def on_mouse_click(self, event):
@@ -288,8 +291,8 @@ class Switcher(Gtk.Window):
             self.update_buffer(key)
 
         if event.type == 'up':
-            # if settings.SWITCH_TWOCAPS:
-            #   self.caps_auto_process(key)
+            if settings.SWITCH_TWOCAPS:
+                self.caps_auto_process(key)
             if settings.SWITCH_MANUAL:
                 self.kb_manual_process(key)
             if settings.SWITCH_AUTO:
@@ -299,6 +302,5 @@ class Switcher(Gtk.Window):
 
     def start(self):
         """"""
-
         self.mouse.on_button_event(self.on_mouse_click)
         self.keyboard.on_key_event(self.on_key_pressed)

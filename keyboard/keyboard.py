@@ -23,7 +23,7 @@ class Keyboard:
     lastdevid = 0
     controller = None
 
-    _KEY_DELAY = 0.005      # sec 0.005
+    _KEY_DELAY = 0.01       # sec 0.01
     _GETDEVICE_DELAY = 30   # sec 30
     _EXCEPTION_DELAY = 5    # sec 5
     _TERMINATION_SIGN = False
@@ -100,52 +100,46 @@ class Keyboard:
 
     def on_key_event(self, callback):
         """"""
-        # Run main loop in its own thread for async work all the rest.
+        # Run main loop in its own thread to able async work for all the rest.
         thread = Thread(
             target=self._main_loop,
             args=(callback,),
             daemon=True)
         thread.start()
 
-    def press(self, char: str, duration: float = 0, external_call: bool = True):
+    def press(self, char: str, duration: float = 0):
         """"""
         key_code = ecodes.ecodes[self._char_to_key(char)]
         self.controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
-        if external_call:
-            self.controller.syn()
-            sleep(duration)
+        self.controller.syn()
+        sleep(duration)
 
-    def release(self, char: str, duration: float = 0, external_call: bool = True):
+    def release(self, char: str, duration: float = 0):
         """"""
         key_code = ecodes.ecodes[self._char_to_key(char)]
         self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
-        if external_call:
-            self.controller.syn()
-            sleep(duration)
+        self.controller.syn()
+        sleep(duration)
 
-    def send(self, chars: str | list, duration=_KEY_DELAY):
+    def send(self, chars: str | list):
         """"""
         if chars == ' ':
             chars = 'space'
 
         chars = chars.split('+')
         for char in chars:
-            self.press(char, duration, external_call=False)
-        self.controller.syn()
-        sleep(duration)
-
+            self.press(char)
+        
+        sleep(self._KEY_DELAY)
         for char in reversed(chars):
-            self.release(char, duration, external_call=False)
-        self.controller.syn()
+            self.release(char)
 
-    def write(self, text: str | list, duration=_KEY_DELAY):
+    def type(self, text: str | list):
         """"""
         for char in text:
-            self.press(char, duration, external_call=False)
-            self.controller.syn()
-            sleep(duration)
-            self.release(char, duration, external_call=False)
-            self.controller.syn()
+            self.press(char)
+            self.release(char)
+            sleep(self._KEY_DELAY)
 
     def is_pressed(self, key_char):
         """"""
