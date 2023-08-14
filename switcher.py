@@ -141,8 +141,10 @@ class Switcher(Gtk.Window):
                            'enter': '\r\n'}[self.buffer[-1]]
 
         self.clipboard.set_text(string, -1)
+        self.keyboard.grab()
         self.keyboard.send('ctrl+v')
         self.kb_switch_layout()
+        self.keyboard.ungrab()
         Timer(0.1, self.get_layout).start()
 
     def kb_manual_process(self, char: str):
@@ -152,12 +154,16 @@ class Switcher(Gtk.Window):
 
         self.delete_last_word()
 
-        string = ''.join(self.buffer)
+        string = ''.join(self.buffer[:-1])
         string = self.translit(string)
+        string = string + {'space': ' ', 'tab': '\t',
+                           'enter': '\r\n'}[self.buffer[-1]]      
 
         self.clipboard.set_text(string, -1)
+        self.keyboard.grab()
         self.keyboard.send('ctrl+v')
         self.kb_switch_layout()
+        self.keyboard.ungrab()
         Timer(0.1, self.get_layout).start()
 
     def caps_auto_process(self, char: str):
@@ -169,31 +175,28 @@ class Switcher(Gtk.Window):
         if not self.upper_fix_required():
             return
 
-        ###############################
-        string = ''.join(self.buffer[:-1])
-        string = string[0] + string[1:].lower()
-        self.buffer = list(string) + [self.buffer[-1]]
+        self.buffer = [self.buffer[0]] + list(''.join(self.buffer[1:-1]).lower()) + [self.buffer[-1]]
 
-        if self.initial_layout == 'ru':
-            RU = str(self._RUS_CHARS+' ')
-            US = str(self._ENG_CHARS+' ')
-            string = ''.join(RU[US.find(s)] for s in string)
-
-        ################################
-
-        if char not in self._MSWITCH_KEYS + self._ASWITCH_KEYS:
-            return
-
-        if char in self._ASWITCH_KEYS and self.lang_fix_required():
+        if self.lang_fix_required():
             return
 
         self.delete_last_word()
+
+        string = ''.join(self.buffer[:-1])
+        string = string[0] + string[1:].lower()
+        
+        if self.initial_layout == 'ru':
+            RU = str(self._RUS_CHARS+' ')
+            US = str(self._ENG_CHARS+' ')
+            string = ''.join(RU[US.find(s)] for s in string)        
         
         string = string + {'space': ' ', 'tab': '\t',
                            'enter': '\r\n'}[self.buffer[-1]]
 
         self.clipboard.set_text(string, -1)
+        self.keyboard.grab()
         self.keyboard.send('ctrl+v')
+        self.keyboard.unrab()
 
     def lang_fix_required(self):
         """"""
@@ -217,14 +220,6 @@ class Switcher(Gtk.Window):
             ):
             return True
         return False
-
-    def to_lower_leadings(self):
-        """"""
-        string = ''.join(self.buffer[:-1])
-        string = string.lower()
-        string = string + {'space': ' ', 'tab': '\t',
-                           'enter': '\r\n'}[self.buffer[-1]]
-        self.buffer = list(string)
 
     def delete_last_word(self):
         """"""

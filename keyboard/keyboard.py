@@ -61,8 +61,9 @@ class Keyboard:
                     self.devthreads.append(thread)
                 sleep(self._GETDEVICE_DELAY)
 
-            except Exception as e:
-                print(f'Exception in keyboard _main_loop: {e}')
+            except Exception as e:                
+                self.ungrab()
+                print(f'Exception in keyboard _main_loop: {e}')                
                 sleep(self._EXCEPTION_DELAY)
 
     def _listener_loop(self, callback, listener):
@@ -81,6 +82,7 @@ class Keyboard:
                         callback(
                             Event(key_code, key_name, key_char, event_type))
             except Exception as e:
+                self.ungrab()
                 print(f'Exception in keyboard _listener_loop: {e}')
                 sleep(self._EXCEPTION_DELAY)
 
@@ -138,6 +140,7 @@ class Keyboard:
         """"""
         for char in text:
             self.press(char)
+            sleep(self._KEY_DELAY)
             self.release(char)
             sleep(self._KEY_DELAY)
 
@@ -174,6 +177,18 @@ class Keyboard:
         for line in keymap.EV_KEYS:
             if line[1] == char.lower():
                 return line[3]
+
+    def grab(self):
+        """"""
+        listener = self.listeners[self.lastdevid]
+        listener.grab()
+        pass
+
+    def ungrab(self):
+        """"""
+        listener = self.listeners[self.lastdevid]
+        listener.ungrab()
+        pass
 
 
 ### DEBUG ###
