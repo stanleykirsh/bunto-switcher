@@ -137,9 +137,9 @@ class Switcher(Gtk.Window):
 
         string = ''.join(self.buffer[:-1])
         string = self.translit(string)
-        string_ends = {'space': ' ', 'tab': '\t', 'enter': '\r\n'}
-        if self.buffer[-1] in string_ends:
-            string = string + string_ends[self.buffer[-1]]    
+        EOW_KEYS = {'space': ' ', 'tab': '\t', 'enter': '\r\n'}
+        if self.buffer[-1] in EOW_KEYS:
+            string = string + EOW_KEYS[self.buffer[-1]]    
 
         self.clipboard.set_text(string, -1)
         self.keyboard.grab()
@@ -150,17 +150,20 @@ class Switcher(Gtk.Window):
 
     def kb_manual_process(self, char: str):
         """"""
+        EOW_KEYS = {'space': ' ', 'tab': '\t', 'enter': '\r\n'}
+
         if char not in self._MSWITCH_KEYS:
-            return
-
-        self.delete_last_word()
+            return        
         
-        string = ''.join(self.buffer[:-1])
-        string = self.translit(string)
-        string_ends = {'space': ' ', 'tab': '\t', 'enter': '\r\n'}
-        if self.buffer[-1] in string_ends:
-            string = string + string_ends[self.buffer[-1]]      
-
+        if self.buffer[-1] in EOW_KEYS:
+            string = ''.join(self.buffer[:-1])
+            string = self.translit(string)
+            string = string + EOW_KEYS[self.buffer[-1]]
+        else:
+            string = ''.join(self.buffer)
+            string = self.translit(string)
+ 
+        self.delete_last_word()
         self.clipboard.set_text(string, -1)
         self.keyboard.grab()
         self.keyboard.send('ctrl+v')
@@ -170,6 +173,8 @@ class Switcher(Gtk.Window):
 
     def caps_auto_process(self, char: str):
         """"""
+        EOW_KEYS = {'space': ' ', 'tab': '\t', 'enter': '\r\n'}
+
         if char not in self._MSWITCH_KEYS + self._ASWITCH_KEYS:
             return
 
@@ -180,22 +185,19 @@ class Switcher(Gtk.Window):
         self.buffer = [self.buffer[0]] + list(''.join(self.buffer[1:-1]).lower()) + [self.buffer[-1]]
 
         if self.lang_fix_required():
-            return
+            return        
+
+        if self.buffer[-1] in EOW_KEYS:
+            string = ''.join(self.buffer[:-1])
+            string = string[0] + string[1:].lower()
+            string = self.translit(string)
+            string = string + EOW_KEYS[self.buffer[-1]] 
+        else:
+            string = ''.join(self.buffer)
+            string = string[0] + string[1:].lower()
+            string = self.translit(string)          
 
         self.delete_last_word()
-
-        string = ''.join(self.buffer[:-1])
-        string = string[0] + string[1:].lower()
-        
-        if self.initial_layout == 'ru':
-            RU = str(self._RUS_CHARS+' ')
-            US = str(self._ENG_CHARS+' ')
-            string = ''.join(RU[US.find(s)] for s in string)        
-        
-        string_ends = {'space': ' ', 'tab': '\t', 'enter': '\r\n'}
-        if self.buffer[-1] in string_ends:
-            string = string + string_ends[self.buffer[-1]] 
-
         self.clipboard.set_text(string, -1)
         self.keyboard.grab()
         self.keyboard.send('ctrl+v')
