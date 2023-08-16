@@ -1,18 +1,15 @@
 from mouse.mouse import Mouse
 from keyboard.keyboard import Keyboard
+from clipboard.clipboard import Clipboard
 from settings import SYS_SWITCH_KEY
-from gi.repository import Gtk, Gdk
 from threading import Timer
 
 import os
+import time
 import settings
 import subprocess
 
-import gi
-gi.require_version('Gtk', '3.0')
-
-
-class Switcher(Gtk.Window):
+class Switcher():
     """"""
 
     # перед переключением раскладки даем время оболочке обработать все [виртуально] нажатые клавиши
@@ -38,7 +35,7 @@ class Switcher(Gtk.Window):
         self.ngrams_ru = []
         self.ngrams_en = []
 
-        self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+        self.clipboard = Clipboard()
 
         dir_path = os.path.dirname(os.path.realpath(__file__))
         self.ngrams_ru = self.load_ngrams((f'{dir_path}/data/ngrams-ru.txt',))
@@ -68,8 +65,6 @@ class Switcher(Gtk.Window):
         if string in settings.IGNORE_WORDS.split('|'):
             return ''
 
-        print(string)
-
         prob_ru = 0
         for ngram in self.ngrams_ru:
             if ngram in string:
@@ -80,7 +75,7 @@ class Switcher(Gtk.Window):
             if ngram in string:
                 prob_en += 1
 
-        print(prob_ru, prob_en)
+        # print(prob_ru, prob_en)
 
         if prob_ru > prob_en:
             return 'ru'
@@ -139,13 +134,15 @@ class Switcher(Gtk.Window):
         string = self.translit(string)
         EOW_KEYS = {'space': ' ', 'tab': '\t', 'enter': '\r\n'}
         if self.buffer[-1] in EOW_KEYS:
-            string = string + EOW_KEYS[self.buffer[-1]]    
+            string = string + EOW_KEYS[self.buffer[-1]]
 
-        self.clipboard.set_text(string, -1)
+        self.clipboard.save()
+        self.clipboard.set_text(string)
         self.keyboard.grab()
         self.keyboard.send('ctrl+v')
         self.kb_switch_layout()
         self.keyboard.ungrab()
+        Timer(0.1, self.clipboard.restore).start()
         Timer(0.1, self.get_layout).start()
 
     def kb_manual_process(self, char: str):
@@ -164,11 +161,14 @@ class Switcher(Gtk.Window):
             string = self.translit(string)
  
         self.delete_last_word()
-        self.clipboard.set_text(string, -1)
+        
+        self.clipboard.save()
+        self.clipboard.set_text(string)        
         self.keyboard.grab()
         self.keyboard.send('ctrl+v')
         self.kb_switch_layout()
         self.keyboard.ungrab()
+        Timer(0.1, self.clipboard.restore).start()
         Timer(0.1, self.get_layout).start()
 
     def caps_auto_process(self, char: str):
@@ -185,7 +185,7 @@ class Switcher(Gtk.Window):
         self.buffer = [self.buffer[0]] + list(''.join(self.buffer[1:-1]).lower()) + [self.buffer[-1]]
 
         if self.lang_fix_required():
-            return        
+            return
 
         if self.buffer[-1] in EOW_KEYS:
             string = ''.join(self.buffer[:-1])
@@ -198,10 +198,13 @@ class Switcher(Gtk.Window):
             string = self.translit(string)          
 
         self.delete_last_word()
-        self.clipboard.set_text(string, -1)
+
+        self.clipboard_save()
+        self.clipboard.set_text(string)
         self.keyboard.grab()
-        self.keyboard.send('ctrl+v')
-        self.keyboard.unrab()
+        self.keyboard.send('ctrl+v')        
+        self.keyboard.ungrab()
+        Timer(0.1, self.clipboard.restore).start()
 
     def lang_fix_required(self):
         """"""
@@ -228,19 +231,21 @@ class Switcher(Gtk.Window):
 
     def delete_last_word(self):
         """"""
-        special_chars = [
-            "`", "[", "]", ";", "'", ",", ".", "/",
-            "~", "{", "}", ":", '"', "<", ">", "?",
-            ]        
+        # special_chars = [
+        #     "`", "[", "]", ";", "'", ",", ".", "/",
+        #     "~", "{", "}", ":", '"', "<", ">", "?",
+        #     ]        
         # проверяем что хотя бы одно значение из bad_chars имеется в буфере
         # OC нестабильно удаляет по ctrl+space последнее слово которое содержат эти символы
         # поэтому такие слова удаляем медленным но надежным backspace
-        if any(map(lambda v: v in self.buffer, special_chars)):
-            for _ in self.buffer:
-                self.keyboard.send('backspace')
+        # if any(map(lambda v: v in self.buffer, special_chars)):
+        #     for _ in self.buffer:
+        #         self.keyboard.send('backspace')
         # если буфер не содержит особых символов, то удалем быстрым способом
-        else:
-            self.keyboard.send('ctrl+backspace')
+        # else:
+        #     self.keyboard.send('ctrl+backspace')
+        for _ in self.buffer:
+            self.keyboard.send('backspace')
 
     def update_buffer(self, char: str):
         """"""
