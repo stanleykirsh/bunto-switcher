@@ -9,6 +9,7 @@ import time
 import settings
 import subprocess
 
+
 class Switcher():
     """"""
 
@@ -24,7 +25,6 @@ class Switcher():
 
     _ASWITCH_KEYS = ['space', 'tab']
     _MSWITCH_KEYS = ['pause']
-
 
     def __init__(self):
         """"""
@@ -150,8 +150,8 @@ class Switcher():
         EOW_KEYS = {'space': ' ', 'tab': '\t', 'enter': '\r\n'}
 
         if char not in self._MSWITCH_KEYS:
-            return        
-        
+            return
+
         if self.buffer[-1] in EOW_KEYS:
             string = ''.join(self.buffer[:-1])
             string = self.translit(string)
@@ -159,11 +159,11 @@ class Switcher():
         else:
             string = ''.join(self.buffer)
             string = self.translit(string)
- 
+
         self.delete_last_word()
-        
+
         self.clipboard.save()
-        self.clipboard.set_text(string)        
+        self.clipboard.set_text(string)
         self.keyboard.grab()
         self.keyboard.send('ctrl+v')
         self.kb_switch_layout()
@@ -182,7 +182,8 @@ class Switcher():
         if not self.upper_fix_required():
             return
 
-        self.buffer = [self.buffer[0]] + list(''.join(self.buffer[1:-1]).lower()) + [self.buffer[-1]]
+        self.buffer = [self.buffer[0]] + \
+            list(''.join(self.buffer[1:-1]).lower()) + [self.buffer[-1]]
 
         if self.lang_fix_required():
             return
@@ -191,18 +192,18 @@ class Switcher():
             string = ''.join(self.buffer[:-1])
             string = string[0] + string[1:].lower()
             string = self.translit(string)
-            string = string + EOW_KEYS[self.buffer[-1]] 
+            string = string + EOW_KEYS[self.buffer[-1]]
         else:
             string = ''.join(self.buffer)
             string = string[0] + string[1:].lower()
-            string = self.translit(string)          
+            string = self.translit(string)
 
         self.delete_last_word()
 
-        self.clipboard_save()
+        self.clipboard.save()
         self.clipboard.set_text(string)
         self.keyboard.grab()
-        self.keyboard.send('ctrl+v')        
+        self.keyboard.send('ctrl+v')
         self.keyboard.ungrab()
         Timer(0.1, self.clipboard.restore).start()
 
@@ -220,12 +221,14 @@ class Switcher():
 
     def upper_fix_required(self):
         """"""
-        string = ''.join(self.buffer)
+        string = ''.join(self.buffer[:-1])
+        print(string)
+        print(string.isupper())
         if (True
-            and len(string) >= 2
-            and string[0:2].isupper()
-            and not string.isupper()
-            ):
+                and len(string) >= 2
+                and string[0:2].isupper()
+                and not string.isupper()
+                ):
             return True
         return False
 
@@ -234,7 +237,7 @@ class Switcher():
         # special_chars = [
         #     "`", "[", "]", ";", "'", ",", ".", "/",
         #     "~", "{", "}", ":", '"', "<", ">", "?",
-        #     ]        
+        #     ]
         # проверяем что хотя бы одно значение из bad_chars имеется в буфере
         # OC нестабильно удаляет по ctrl+space последнее слово которое содержат эти символы
         # поэтому такие слова удаляем медленным но надежным backspace
@@ -249,11 +252,10 @@ class Switcher():
 
     def update_buffer(self, char: str):
         """"""
-        # Если первый значимый символ после конца слова, то очищаем буфер.
+        # Если приходит первый значимый символ после конца слова, то очищаем буфер.
         if (char in self._RUS_CHARS + self._ENG_CHARS
                 and len(self.buffer) >= 2
                 and self.buffer[-1] in ('space', 'tab', 'enter')):
-            print('buffer.clear 1')
             self.buffer.clear()
 
         if char in self._RUS_CHARS + self._ENG_CHARS:
@@ -275,11 +277,10 @@ class Switcher():
             if self.buffer:
                 self.buffer.pop()
             return
-        
+
         if (char not in self._RUS_CHARS + self._ENG_CHARS
                 and char not in self._ASWITCH_KEYS + self._MSWITCH_KEYS
                 and char not in ('ctrl', 'shift', 'space', 'caps lock')):
-            print('buffer.clear 2')
             self.buffer.clear()
 
     def on_mouse_click(self, event):
@@ -304,6 +305,10 @@ class Switcher():
                 self.kb_auto_process(key)
             if key in (settings.SYS_SWITCH_KEY).split('+'):
                 self.get_layout()
+
+        if event.type == 'hold':
+            # self.update_buffer(key)
+            self.buffer.clear()
 
     def start(self):
         """"""
