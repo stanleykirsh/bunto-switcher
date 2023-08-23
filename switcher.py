@@ -28,14 +28,13 @@ class Switcher():
 
     def __init__(self):
         """"""
+        self.clipboard = Clipboard()
         self.keyboard = Keyboard()
         self.mouse = Mouse()
 
         self.buffer = []
         self.ngrams_ru = []
         self.ngrams_en = []
-
-        self.clipboard = Clipboard()
 
         dir_path = os.path.dirname(os.path.realpath(__file__))
         self.ngrams_ru = self.load_ngrams((f'{dir_path}/data/ngrams-ru.txt',))
@@ -62,8 +61,8 @@ class Switcher():
         for s in STRIP_US + STRIP_RU:
             string = string.replace(s, ' ')
 
-        if string in settings.IGNORE_WORDS.split('|'):
-            return ''
+        # if string in settings.IGNORE_WORDS.split('|'):
+        #    return ''
 
         prob_ru = 0
         for ngram in self.ngrams_ru:
@@ -228,7 +227,7 @@ class Switcher():
                 and len(string) >= 2
                 and string[0:2].isupper()
                 and not string.isupper()
-                ):
+            ):
             return True
         return False
 
@@ -307,7 +306,6 @@ class Switcher():
                 self.get_layout()
 
         if event.type == 'hold':
-            # self.update_buffer(key)
             self.buffer.clear()
 
     def start(self):
