@@ -1,8 +1,29 @@
-#!/bin/bash
+#!/usr/bin/env python
 
-echo uninstalling "bunto switcher"...
+import os
+import shutil
+import pathlib
 
-rm -rf /usr/share/bunto
-rm -rf /usr/share/applications/bunto.desktop
+# Определяем имя текущего пользователя.
+print("Определяю текущего пользователя...")
+username = os.environ['SUDO_USER']
 
-echo completed...
+# Удаляем папку.
+print("Удаляю папку приложения...")
+dirpath = pathlib.Path("/usr/share/bunto/")
+if dirpath.exists() and dirpath.is_dir():
+    shutil.rmtree(dirpath)
+
+# Удаляем из обзора приложений.
+print("Удаляю из обзора приложений...")
+filename = "/usr/share/applications/bunto.desktop"
+if os.path.isfile(filename):
+    os.remove(filename)
+
+# Удаляем из автозапуска.
+print("Удаляю из автозапуска...")
+filename = f"/home/{username}/.config/autostart/bunto.desktop"
+if os.path.isfile(filename):
+    os.remove(filename)
+
+print("Готово!")

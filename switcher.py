@@ -5,7 +5,6 @@ from settings import SYS_SWITCH_KEY
 from threading import Timer
 
 import os
-import time
 import settings
 import subprocess
 
@@ -268,7 +267,7 @@ class Switcher():
             return
 
         #  Символы конца строки тоже добавляем в буфер.
-        if char in ('space', 'tab', 'enter'):
+        if char in ('space', 'tab'):
             self.buffer.append(char)
             return
 
