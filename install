@@ -31,7 +31,6 @@ shutil.copy("./bunto.desktop", "/usr/share/applications/")
 print("Добавляю приложение в автозапуск...")
 shutil.copy("./bunto.desktop", f"/home/{username}/.config/autostart/")
 
-"""
 # Устанавливаем зависимости
 # релогин или перезагрузка может потребоваться после первого шага
 # appindicator
@@ -59,12 +58,11 @@ result = result.stdout.decode('utf-8')
 print(result)
 
 # dbus-x11
-#sudo dnf install dbus-x11 -y
+# sudo dnf install dbus-x11 -y
 
 result = subprocess.run("sudo dnf install dbus-x11 -y".split(), stdout=subprocess.PIPE)
 result = result.stdout.decode('utf-8')
 print(result)
-"""
 
 # Добавляем разрешение в nosudo если его еще нет.
 print("Проверяю разрешение в nosudo...")
@@ -85,5 +83,7 @@ with open(sudoers) as f:
 if need_update:
     with open(sudoers, "a") as f:
         f.write(f"{username} ALL=(ALL) NOPASSWD: /usr/bin/nice")
+
+# TODO добавление сочетания для переключения.
 
 print("Готово!")
