@@ -102,17 +102,24 @@ class Switcher():
         else:
             return char
 
-    def translit(self, string: str):
+    def split_language(self, string: str):
         """"""
         RU = str(self._RUS_CHARS+' ')
         US = str(self._ENG_CHARS+' ')
 
-        if self.initial_layout == 'ru':
-            translited = ''.join(RU[US.find(s)] for s in string)
-            translited = ''.join(US[RU.find(s)] for s in translited)
         if self.initial_layout == 'us':
-            translited = ''.join(RU[US.find(s)] for s in string)
-        return translited
+            return ''.join(RU[US.find(s)] for s in string)
+        elif self.initial_layout == 'ru':
+            return string
+
+    def translit(self, string: str):
+        RU = str(self._RUS_CHARS+' ')
+        US = str(self._ENG_CHARS+' ')
+
+        if self.initial_layout == 'ru':
+            return ''.join(RU[US.find(s)] for s in string)
+        elif self.initial_layout == 'us':
+            return string
 
     def kb_switch_layout(self):
         """"""
@@ -129,7 +136,7 @@ class Switcher():
         self.delete_last_word()
 
         string = ''.join(self.buffer[:-1])
-        string = self.translit(string)
+        string = self.split_language(string)
         EOW_KEYS = {'space': ' ', 'tab': '\t', 'enter': '\r\n'}
         if self.buffer[-1] in EOW_KEYS:
             string = string + EOW_KEYS[self.buffer[-1]]
@@ -152,11 +159,11 @@ class Switcher():
 
         if self.buffer[-1] in EOW_KEYS:
             string = ''.join(self.buffer[:-1])
-            string = self.translit(string)
+            string = self.split_language(string)
             string = string + EOW_KEYS[self.buffer[-1]]
         else:
             string = ''.join(self.buffer)
-            string = self.translit(string)
+            string = self.split_language(string)
 
         self.delete_last_word()
 
@@ -185,6 +192,9 @@ class Switcher():
 
         if self.lang_fix_required():
             return
+
+        RU = str(self._RUS_CHARS+' ')
+        US = str(self._ENG_CHARS+' ')
 
         if self.buffer[-1] in EOW_KEYS:
             string = ''.join(self.buffer[:-1])
@@ -220,12 +230,10 @@ class Switcher():
     def upper_fix_required(self):
         """"""
         string = ''.join(self.buffer[:-1])
-        print(string)
-        print(string.isupper())
         if (True
-                and len(string) >= 2
-                and string[0:2].isupper()
-                and not string.isupper()
+            and len(string) >= 2
+            and string[0:2].isupper()
+            and not string.isupper()
             ):
             return True
         return False

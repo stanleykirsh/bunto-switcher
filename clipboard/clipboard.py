@@ -58,7 +58,13 @@ class Clipboard:
         """"""
         if self.storage_text:
             self.set_text(self.storage_text)
+        else:
+            self.set_text('')
+
         if self.storage_image:
             self.set_image(self.storage_image)
+        else:
+            pass
+
         self.storage_text = None
         self.storage_image = None
