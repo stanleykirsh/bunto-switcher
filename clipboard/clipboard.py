@@ -18,23 +18,27 @@ class Clipboard:
         self.clipboard.clear()
         exist_text = Gtk.Clipboard.wait_is_text_available(self.clipboard)
         exist_image = Gtk.Clipboard.wait_is_image_available(self.clipboard)
-        while exist_text and exist_image:
+        for _ in range(100):
+            if not exist_text and not exist_image:
+                return
             time.sleep(0.01)
 
     def set_text(self, text: str):
         """"""
         self.clear()
         self.clipboard.set_text(text, -1)
-        # self.get_text() != text:
-        while not Gtk.Clipboard.wait_is_text_available(self.clipboard):
+        for _ in range(100):
+            if Gtk.Clipboard.wait_is_text_available(self.clipboard):
+                return
             time.sleep(0.01)
 
     def set_image(self, pixbuf):
         """"""
         self.clear()
         self.clipboard.set_image(pixbuf)
-        # self.get_image() != pixbuf:
-        while Gtk.Clipboard.wait_is_image_available(self.clipboard):
+        for _ in range(100):
+            if Gtk.Clipboard.wait_is_image_available(self.clipboard):
+                return
             time.sleep(0.01)
 
     def get_text(self):

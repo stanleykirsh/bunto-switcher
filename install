@@ -64,24 +64,19 @@ result = subprocess.run("sudo dnf install dbus-x11 -y".split(), stdout=subproces
 result = result.stdout.decode('utf-8')
 print(result)
 
-# Добавляем разрешение в nosudo если его еще нет.
-print("Проверяю разрешение в nosudo...")
+# Добавляем разрешение в sudoers если его еще нет.
+print("Проверяю разрешение в sudoers...")
 
 substr = "NOPASSWD: /usr/bin/nice"
 sudoers = "/etc/sudoers"
-need_update = True
 
-with open(sudoers) as f:
+with open(sudoers, 'r+') as f:
     if substr in f.read():
-        need_update = False
         print("Разрешение уже имеется...")
-        print("Изменение nosudo не требуется...")
+        print("Изменение sudoers не требуется...")
     else:
         print("Разрешение отсутствует...")
         print("Добавляю разрешение...")
-
-if need_update:
-    with open(sudoers, "a") as f:
         f.write(f"{username} ALL=(ALL) NOPASSWD: /usr/bin/nice")
 
 # TODO добавление сочетания для переключения.

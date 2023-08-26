@@ -26,4 +26,6 @@ filename = f"/home/{username}/.config/autostart/bunto.desktop"
 if os.path.isfile(filename):
     os.remove(filename)
 
+# Удаляем разрешение из sudoers.
+
 print("Готово!")
