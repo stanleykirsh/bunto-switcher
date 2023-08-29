@@ -60,8 +60,12 @@ class Switcher():
         for s in STRIP_US + STRIP_RU:
             string = string.replace(s, ' ')
 
-        # if string in settings.IGNORE_WORDS.split('|'):
-        #    return ''
+        # Для слов исключений вероятность языка неопределенная.
+        # То есть менять для них раскладку автоматически не требуется.
+        if (self.translit(string.strip())
+            and string.strip() in settings.IGNORE_WORDS.splitlines()
+            ):
+            return ''
 
         prob_ru = 0
         for ngram in self.ngrams_ru:
@@ -231,9 +235,9 @@ class Switcher():
         """"""
         string = ''.join(self.buffer[:-1])
         if (True
-            and len(string) >= 2
-            and string[0:2].isupper()
-            and not string.isupper()
+                and len(string) >= 2
+                and string[0:2].isupper()
+                and not string.isupper()
             ):
             return True
         return False

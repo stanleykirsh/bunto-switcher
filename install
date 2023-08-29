@@ -1,84 +1,54 @@
-#!/usr/bin/env python
+#!/bin/bash
 
-import os
-import shutil
-import pathlib
-import subprocess
+echo Установка bunto switcher...
 
-print("Установка bunto switcher...")
+# Cоздаем папку приложения если еще не существует.
+# Очищаем содержимое если папка уже существует.
+mkdir -p /usr/share/bunto
+rm -rf /usr/share/bunto/*
 
-# Определяем имя текущего пользователя.
-print("Определяю текущего пользователя...")
-username = os.environ['SUDO_USER']
-
-# Удаляем папку.
-print("Готовлю папку для приложения...")
-dirpath = pathlib.Path("/usr/share/bunto/")
-if dirpath.exists() and dirpath.is_dir():
-    shutil.rmtree(dirpath)
-
-# Создаем папку и копируем файлы приложения.
-print("Копирую файлы...")
-shutil.copytree("./", "/usr/share/bunto/",
-                ignore=shutil.ignore_patterns(
-                    'notes', 'utils', '__pycache__', '*.pyc', 'tmp*'))
+# Копируем файлы приложения кроме некоторых исключений !().
+echo Копирую файлы...
+shopt -s extglob
+cp -R ./!(notes|utils|.vscode|todo.txt|__pycache__) /usr/share/bunto/
 
 # Добавляем приложение в обзор приложений.
-print("Добавляю приложение в список программ...")
-shutil.copy("./bunto.desktop", "/usr/share/applications/")
+echo Добавляю приложение в список программ...
+cp ./bunto.desktop /usr/share/applications/
 
 # Добавляем приложение в автозапуск.
-print("Добавляю приложение в автозапуск...")
-shutil.copy("./bunto.desktop", f"/home/{username}/.config/autostart/")
+echo Добавляю приложение в автозапуск...
+cp ./bunto.desktop /home/$SUDO_USER/.config/autostart/
 
-# Устанавливаем зависимости
-# релогин или перезагрузка может потребоваться после первого шага
+# Устанавливаем зависимости.
+###########################
+echo Проверяю установленные зависимости...
+
 # appindicator
 # sudo dnf install gnome-shell-extension-appindicator
 # gnome-extensions enable appindicatorsupport@rgcjonas.gmail.com
-
-result = subprocess.run("sudo dnf install gnome-shell-extension-appindicator".split(), stdout=subprocess.PIPE)
-result = result.stdout.decode('utf-8')
-print(result)
-
-result = subprocess.run("gnome-extensions enable appindicatorsupport@rgcjonas.gmail.com".split(), stdout=subprocess.PIPE)
-result = result.stdout.decode('utf-8')
-print(result)
+# релогин или перезагрузка может потребоваться после первого шага
+rpm -qa | grep -qw gnome-shell-extension-appindicator ||
+    { echo Устанавливаю appindicator...;
+    sudo dnf -y install gnome-shell-extension-appindicator; 
+    gnome-extensions enable appindicatorsupport@rgcjonas.gmail.com; }
 
 # evdev
 # sudo dnf makecache
 # sudo dnf install python3-evdev.x86_64
-
-result = subprocess.run("sudo dnf makecache".split(), stdout=subprocess.PIPE)
-result = result.stdout.decode('utf-8')
-print(result)
-
-result = subprocess.run("sudo dnf install python3-evdev.x86_64".split(), stdout=subprocess.PIPE)
-result = result.stdout.decode('utf-8')
-print(result)
+rpm -qa | grep -qw python3-evdev ||
+    { echo Устанавливаю evdev...;
+    sudo dnf -y install python3-evdev; }
 
 # dbus-x11
 # sudo dnf install dbus-x11 -y
-
-result = subprocess.run("sudo dnf install dbus-x11 -y".split(), stdout=subprocess.PIPE)
-result = result.stdout.decode('utf-8')
-print(result)
+rpm -qa | grep -qw dbus-x11 ||
+    { echo Устанавливаю dbus-x11...;
+    sudo dnf -y install dbus-x11; }
 
 # Добавляем разрешение в sudoers если его еще нет.
-print("Проверяю разрешение в sudoers...")
+grep -qxF "$SUDO_USER ALL=(ALL) NOPASSWD: /usr/bin/nice" /etc/sudoers || 
+    { echo Добавляю разрешение в sudoers...;
+    echo "$SUDO_USER ALL=(ALL) NOPASSWD: /usr/bin/nice" >> /etc/sudoers; }
 
-substr = "NOPASSWD: /usr/bin/nice"
-sudoers = "/etc/sudoers"
-
-with open(sudoers, 'r+') as f:
-    if substr in f.read():
-        print("Разрешение уже имеется...")
-        print("Изменение sudoers не требуется...")
-    else:
-        print("Разрешение отсутствует...")
-        print("Добавляю разрешение...")
-        f.write(f"{username} ALL=(ALL) NOPASSWD: /usr/bin/nice")
-
-# TODO добавление сочетания для переключения.
-
-print("Готово!")
+echo Готово!

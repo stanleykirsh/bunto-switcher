@@ -16,11 +16,10 @@ class Clipboard:
     def clear(self):
         """"""
         self.clipboard.clear()
-        exist_text = Gtk.Clipboard.wait_is_text_available(self.clipboard)
-        exist_image = Gtk.Clipboard.wait_is_image_available(self.clipboard)
         for _ in range(100):
-            if not exist_text and not exist_image:
-                return
+            if not Gtk.Clipboard.wait_is_text_available(self.clipboard):
+                if not Gtk.Clipboard.wait_is_image_available(self.clipboard):
+                    return
             time.sleep(0.01)
 
     def set_text(self, text: str):

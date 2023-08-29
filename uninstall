@@ -1,31 +1,21 @@
-#!/usr/bin/env python
+#!/bin/bash
 
-import os
-import shutil
-import pathlib
-
-# Определяем имя текущего пользователя.
-print("Определяю текущего пользователя...")
-username = os.environ['SUDO_USER']
+echo Удаляю bunto switcher...
 
 # Удаляем папку.
-print("Удаляю папку приложения...")
-dirpath = pathlib.Path("/usr/share/bunto/")
-if dirpath.exists() and dirpath.is_dir():
-    shutil.rmtree(dirpath)
+echo Удаляю папку приложения...
+rm -rf /usr/share/bunto
 
 # Удаляем из обзора приложений.
-print("Удаляю из обзора приложений...")
-filename = "/usr/share/applications/bunto.desktop"
-if os.path.isfile(filename):
-    os.remove(filename)
+echo Удаляю из обзора приложений...
+rm -rf /usr/share/applications/bunto.desktop
 
 # Удаляем из автозапуска.
-print("Удаляю из автозапуска...")
-filename = f"/home/{username}/.config/autostart/bunto.desktop"
-if os.path.isfile(filename):
-    os.remove(filename)
+echo Удаляю из автозапуска...
+rm -rf /home/$SUDO_USER/.config/autostart/bunto.desktop
 
 # Удаляем разрешение из sudoers.
+echo Удаляю разрешение из sudoers...
+sudo sed -i "/$SUDO_USER ALL=(ALL) NOPASSWD: \/usr\/bin\/nice/d" /etc/sudoers
 
-print("Готово!")
+echo Готово!...

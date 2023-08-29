@@ -10,10 +10,8 @@ SWITCH_TWOCAPS = True
 # Сочетание клавиш на которую в системе завязано переключение раскладки.
 SYS_SWITCH_KEY = 'ctrl+shift'
 
-ALWAYS_RU = '''
-'''
-
-ALWAYS_EN = '''
+# Игнорировать автопереключение
+IGNORE_WORDS = '''
 dnf
 gtk
 '''
