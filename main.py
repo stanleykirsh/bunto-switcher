@@ -21,7 +21,8 @@ from gi.repository import Gtk as gtk
 from switcher import Switcher
 
 APPINDICATOR_ID = 'buntoappindicator'
-dir_path = os.path.dirname(os.path.realpath(__file__))
+DIR_PATH = os.path.dirname(os.path.realpath(__file__))
+SELF_PID = os.getpid()
 
 # settings = gtk.Settings.get_default()
 # getting all existing properties #
@@ -36,7 +37,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 
 
 def main():
-    icon = f'{dir_path}/flag-white.png'
+    icon = f'{DIR_PATH}/flag-white.png'
     indicator = appindicator.Indicator.new(APPINDICATOR_ID, os.path.abspath(
         icon), appindicator.IndicatorCategory.APPLICATION_STATUS)
     indicator.set_status(appindicator.IndicatorStatus.ACTIVE)
@@ -65,6 +66,7 @@ def quit(source):
 
 
 if __name__ == "__main__":
+    # subprocess.run("sudo nice -n -18 python switcher.py".split())
     switcher = Switcher()
     switcher.start()
     main()

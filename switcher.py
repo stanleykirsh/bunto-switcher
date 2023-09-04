@@ -19,6 +19,8 @@ class Switcher():
     # для Wayland:  0.0 sec
     _SWITCH_DELAY = 0.0
 
+    _EOW_KEYS = {'space': ' ', 'tab': '\t', 'enter': '\r\n'}
+
     _RUS_CHARS = """ё1234567890-=йцукенгшщзхъфывапролджэ\ячсмитьбю.Ё!"№;%:?*()_+ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭ/ЯЧСМИТЬБЮ,"""
     _ENG_CHARS = """`1234567890-=qwertyuiop[]asdfghjkl;'\zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}ASDFGHJKL:"|ZXCVBNM<>?"""
 
@@ -63,8 +65,8 @@ class Switcher():
         # Для слов исключений вероятность языка неопределенная.
         # То есть менять для них раскладку автоматически не требуется.
         if (self.translit(string.strip())
-            and string.strip() in settings.IGNORE_WORDS.splitlines()
-            ):
+                    and string.strip() in settings.IGNORE_WORDS.splitlines()
+                ):
             return ''
 
         prob_ru = 0
@@ -137,53 +139,47 @@ class Switcher():
         if not self.lang_fix_required():
             return
 
-        self.delete_last_word()
-
         string = ''.join(self.buffer[:-1])
         string = self.split_language(string)
-        EOW_KEYS = {'space': ' ', 'tab': '\t', 'enter': '\r\n'}
-        if self.buffer[-1] in EOW_KEYS:
-            string = string + EOW_KEYS[self.buffer[-1]]
 
+        if self.buffer[-1] in self._EOW_KEYS:
+            string = string + self._EOW_KEYS[self.buffer[-1]]
+
+        self.delete_last_word()
         self.clipboard.save()
         self.clipboard.set_text(string)
         self.keyboard.grab()
-        self.keyboard.send('ctrl+v')
+        self.keyboard.send('ctrl_left+v')
         self.kb_switch_layout()
         self.keyboard.ungrab()
-        Timer(0.1, self.clipboard.restore).start()
-        Timer(0.1, self.get_layout).start()
+        Timer(0.2, self.clipboard.restore).start()
+        Timer(0.2, self.get_layout).start()
 
     def kb_manual_process(self, char: str):
         """"""
-        EOW_KEYS = {'space': ' ', 'tab': '\t', 'enter': '\r\n'}
-
         if char not in self._MSWITCH_KEYS:
             return
 
-        if self.buffer[-1] in EOW_KEYS:
+        if self.buffer[-1] in self._EOW_KEYS:
             string = ''.join(self.buffer[:-1])
             string = self.split_language(string)
-            string = string + EOW_KEYS[self.buffer[-1]]
+            string = string + self._EOW_KEYS[self.buffer[-1]]
         else:
             string = ''.join(self.buffer)
             string = self.split_language(string)
 
         self.delete_last_word()
-
         self.clipboard.save()
         self.clipboard.set_text(string)
         self.keyboard.grab()
-        self.keyboard.send('ctrl+v')
+        self.keyboard.send('ctrl_left+v')
         self.kb_switch_layout()
         self.keyboard.ungrab()
-        Timer(0.1, self.clipboard.restore).start()
-        Timer(0.1, self.get_layout).start()
+        Timer(0.2, self.clipboard.restore).start()
+        Timer(0.2, self.get_layout).start()
 
     def caps_auto_process(self, char: str):
         """"""
-        EOW_KEYS = {'space': ' ', 'tab': '\t', 'enter': '\r\n'}
-
         if char not in self._MSWITCH_KEYS + self._ASWITCH_KEYS:
             return
 
@@ -200,29 +196,29 @@ class Switcher():
         RU = str(self._RUS_CHARS+' ')
         US = str(self._ENG_CHARS+' ')
 
-        if self.buffer[-1] in EOW_KEYS:
+        if self.buffer[-1] in self._EOW_KEYS:
             string = ''.join(self.buffer[:-1])
             string = string[0] + string[1:].lower()
             string = self.translit(string)
-            string = string + EOW_KEYS[self.buffer[-1]]
+            string = string + self._EOW_KEYS[self.buffer[-1]]
         else:
             string = ''.join(self.buffer)
             string = string[0] + string[1:].lower()
             string = self.translit(string)
 
         self.delete_last_word()
-
         self.clipboard.save()
         self.clipboard.set_text(string)
         self.keyboard.grab()
-        self.keyboard.send('ctrl+v')
+        self.keyboard.send('ctrl_left+v')
         self.keyboard.ungrab()
-        Timer(0.1, self.clipboard.restore).start()
+        Timer(0.2, self.clipboard.restore).start()
 
     def lang_fix_required(self):
         """"""
         string = ''.join(self.buffer)
-        string = string.replace('shift+', '')
+        string = string.replace('shift_left+', '')
+        string = string.replace('shift_right+', '')
         string = string.replace('space', ' ')
         string = string.replace('tab', ' ')
         probability = self.layout_probability(string)
@@ -234,52 +230,48 @@ class Switcher():
     def upper_fix_required(self):
         """"""
         string = ''.join(self.buffer[:-1])
-        if (True
-                and len(string) >= 2
-                and string[0:2].isupper()
-                and not string.isupper()
-            ):
+        if (
+            len(string) >= 2
+            and string[0:2].isupper()
+            and not string.isupper()
+        ):
             return True
         return False
 
     def delete_last_word(self):
         """"""
-        # special_chars = [
-        #     "`", "[", "]", ";", "'", ",", ".", "/",
-        #     "~", "{", "}", ":", '"', "<", ">", "?",
-        #     ]
-        # проверяем что хотя бы одно значение из bad_chars имеется в буфере
-        # OC нестабильно удаляет по ctrl+space последнее слово которое содержат эти символы
-        # поэтому такие слова удаляем медленным но надежным backspace
-        # if any(map(lambda v: v in self.buffer, special_chars)):
-        #     for _ in self.buffer:
-        #         self.keyboard.send('backspace')
-        # если буфер не содержит особых символов, то удалем быстрым способом
-        # else:
-        #     self.keyboard.send('ctrl+backspace')
         for _ in self.buffer:
             self.keyboard.send('backspace')
 
     def update_buffer(self, char: str):
         """"""
         # Если приходит первый значимый символ после конца слова, то очищаем буфер.
-        if (char in self._RUS_CHARS + self._ENG_CHARS
-                and len(self.buffer) >= 2
-                and self.buffer[-1] in ('space', 'tab', 'enter')):
+        # Первое условие обязательно первое чтобы при пустом буфере не падало второе.
+        if (
+                len(self.buffer) >= 1  # ('space', 'tab', 'enter')):
+                and self.buffer[-1] in self._EOW_KEYS
+                and char in self._RUS_CHARS + self._ENG_CHARS):
             self.buffer.clear()
 
         if char in self._RUS_CHARS + self._ENG_CHARS:
-            if self.keyboard.is_pressed('ctrl'):
+
+            # Ctrl + любая буква (напрмер, ctrl + v) чистят буфер и не добавляет эту букву в буфер.
+            if self.keyboard.is_pressed('ctrl_left') or self.keyboard.is_pressed('ctrl_right'):
+                self.buffer.clear()
                 return
-            if self.keyboard.is_pressed('shift'):
+
+            # Shift + любая буква переводят нажатую букву в верхний регистр.
+            if self.keyboard.is_pressed('shift_left') or self.keyboard.is_pressed('shift_right'):
                 char = self.char_upper(char)
+
+            # Включенный капс переводит нажатую букву в верхний регистр.
             if self.keyboard.is_caps_locked():
                 char = self.char_upper(char)
             self.buffer.append(char)
             return
 
         #  Символы конца строки тоже добавляем в буфер.
-        if char in ('space', 'tab'):
+        if char in self._EOW_KEYS:  # ('space', 'tab', 'enter'):
             self.buffer.append(char)
             return
 
@@ -290,7 +282,7 @@ class Switcher():
 
         if (char not in self._RUS_CHARS + self._ENG_CHARS
                 and char not in self._ASWITCH_KEYS + self._MSWITCH_KEYS
-                and char not in ('ctrl', 'shift', 'space', 'caps lock')):
+                and char not in ('ctrl_left', 'ctrl_right', 'shift_left', 'shift_right', 'space', 'caps_lock')):
             self.buffer.clear()
 
     def on_mouse_click(self, event):

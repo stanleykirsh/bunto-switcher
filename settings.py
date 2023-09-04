@@ -8,7 +8,7 @@ SWITCH_MANUAL = True
 SWITCH_TWOCAPS = True
 
 # Сочетание клавиш на которую в системе завязано переключение раскладки.
-SYS_SWITCH_KEY = 'ctrl+shift'
+SYS_SWITCH_KEY = 'ctrl_left+shift_left'
 
 # Игнорировать автопереключение
 IGNORE_WORDS = '''
