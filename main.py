@@ -8,9 +8,6 @@
 # https://packages.fedoraproject.org/pkgs/libappindicator/libappindicator/
 # sudo dnf install libappindicator-gtk3
 
-import os
-import subprocess
-
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('AppIndicator3', '0.1')
@@ -18,22 +15,24 @@ gi.require_version('AppIndicator3', '0.1')
 from gi.repository import AppIndicator3 as appindicator
 from gi.repository import Gtk as gtk
 
-from switcher import Switcher
+import subprocess
+import threading
+import time
+import os
 
 APPINDICATOR_ID = 'buntoappindicator'
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
-SELF_PID = os.getpid()
 
 # settings = gtk.Settings.get_default()
 # getting all existing properties #
 # for i in settings.list_properties():
 #    #print(i)
 #    print(f'{i} == {settings.get_property(str(i.name))}')
-#gtk_theme_name = settings.get_property('gtk-theme-name')
-#settings.set_property("gtk-theme-name", gtk_theme_name)
-#settings.set_property("gtk-application-prefer-dark-theme", True)
-#settings.set_property("gtk-theme-name", "Numix")
-#settings.set_property("gtk-application-prefer-dark-theme", False)
+# gtk_theme_name = settings.get_property('gtk-theme-name')
+# settings.set_property("gtk-theme-name", gtk_theme_name)
+# settings.set_property("gtk-application-prefer-dark-theme", True)
+# settings.set_property("gtk-theme-name", "Numix")
+# settings.set_property("gtk-application-prefer-dark-theme", False)
 
 
 def main():
@@ -62,11 +61,25 @@ def settings(source):
 
 
 def quit(source):
+    switcher.terminate()
+    while switcher.poll() is None:
+        time.sleep(0.1)
     gtk.main_quit()
 
 
-if __name__ == "__main__":
-    # subprocess.run("sudo nice -n -18 python switcher.py".split())
-    switcher = Switcher()
-    switcher.start()
+def quit_on_crash():
+    while switcher.poll() is None:
+        time.sleep(1)
+    gtk.main_quit()
+
+
+if __name__ == '__main__':
+    command = f'sudo nice -n -18 python /usr/share/bunto/switcher.py'
+    switcher = subprocess.Popen(command.split())
+
+    thread = threading.Thread(
+        target=quit_on_crash,
+        daemon=True)
+    thread.start()
+
     main()

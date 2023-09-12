@@ -1,3 +1,10 @@
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('AppIndicator3', '0.1')
+
+from gi.repository import AppIndicator3 as appindicator
+from gi.repository import Gtk as gtk
+
 from mouse.mouse import Mouse
 from keyboard.keyboard import Keyboard
 from clipboard.clipboard import Clipboard
@@ -315,3 +322,7 @@ class Switcher():
         """"""
         self.mouse.on_button_event(self.on_mouse_click)
         self.keyboard.on_key_event(self.on_key_pressed)
+
+switcher = Switcher()
+switcher.start()
+gtk.main()

@@ -15,10 +15,12 @@ cp -R ./!(notes|utils|.vscode|todo.txt|__pycache__) /usr/share/bunto/
 # Добавляем приложение в обзор приложений.
 echo Добавляю приложение в список программ...
 cp ./bunto.desktop /usr/share/applications/
+sudo chown $SUDO_USER: /usr/share/applications/bunto.desktop
 
 # Добавляем приложение в автозапуск.
 echo Добавляю приложение в автозапуск...
 cp ./bunto.desktop /home/$SUDO_USER/.config/autostart/
+sudo chown $SUDO_USER: /home/$SUDO_USER/.config/autostart/bunto.desktop
 
 # Устанавливаем зависимости.
 ###########################
