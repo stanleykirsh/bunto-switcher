@@ -71,9 +71,10 @@ class Switcher():
 
         # Для слов исключений вероятность языка неопределенная.
         # То есть менять для них раскладку автоматически не требуется.
-        if (self.translit(string.strip())
-                    and string.strip() in settings.IGNORE_WORDS.splitlines()
-                ):
+        if (
+            self.translit(string.strip())
+            and string.strip() in settings.IGNORE_WORDS.splitlines()
+        ):
             return ''
 
         prob_ru = 0
@@ -255,9 +256,10 @@ class Switcher():
         # Если приходит первый значимый символ после конца слова, то очищаем буфер.
         # Первое условие обязательно первое чтобы при пустом буфере не падало второе.
         if (
-                len(self.buffer) >= 1  # ('space', 'tab', 'enter')):
-                and self.buffer[-1] in self._EOW_KEYS
-                and char in self._RUS_CHARS + self._ENG_CHARS):
+            len(self.buffer) >= 1  # ('space', 'tab', 'enter')):
+            and self.buffer[-1] in self._EOW_KEYS
+            and char in self._RUS_CHARS + self._ENG_CHARS
+        ):
             self.buffer.clear()
 
         if char in self._RUS_CHARS + self._ENG_CHARS:
@@ -305,7 +307,6 @@ class Switcher():
         if event.type == 'down':
             self.update_buffer(key)
 
-        if event.type == 'up':
             if settings.SWITCH_TWOCAPS:
                 self.caps_auto_process(key)
             if settings.SWITCH_MANUAL:
@@ -322,6 +323,7 @@ class Switcher():
         """"""
         self.mouse.on_button_event(self.on_mouse_click)
         self.keyboard.on_key_event(self.on_key_pressed)
+
 
 switcher = Switcher()
 switcher.start()

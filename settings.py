@@ -14,4 +14,7 @@ SYS_SWITCH_KEY = 'ctrl_left+shift_left'
 IGNORE_WORDS = '''
 dnf
 gtk
+gtk3
+gtk4
+gtk5
 '''
