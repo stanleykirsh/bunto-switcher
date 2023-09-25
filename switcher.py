@@ -1,8 +1,6 @@
 import gi
 gi.require_version('Gtk', '3.0')
-gi.require_version('AppIndicator3', '0.1')
 
-from gi.repository import AppIndicator3 as appindicator
 from gi.repository import Gtk as gtk
 
 from mouse.mouse import Mouse
@@ -18,14 +16,6 @@ import subprocess
 
 class Switcher():
     """"""
-
-    # перед переключением раскладки даем время оболочке обработать все [виртуально] нажатые клавиши
-    # потому что если это сделать сразу то оболочка пытается одновременно выводить текст и переключать раскладку
-    # и в результате зависает
-    # для X11:      0.5 sec
-    # для Wayland:  0.0 sec
-    _SWITCH_DELAY = 0.0
-
     _EOW_KEYS = {'space': ' ', 'tab': '\t', 'enter': '\r\n'}
 
     _RUS_CHARS = """ё1234567890-=йцукенгшщзхъфывапролджэ\ячсмитьбю.Ё!"№;%:?*()_+ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭ/ЯЧСМИТЬБЮ,"""
@@ -70,7 +60,7 @@ class Switcher():
             string = string.replace(s, ' ')
 
         # Для слов исключений вероятность языка неопределенная.
-        # То есть менять для них раскладку автоматически не требуется.
+        # Менять раскладку автоматически для них не требуется.
         if (
             self.translit(string.strip())
             and string.strip() in settings.IGNORE_WORDS.splitlines()
@@ -98,10 +88,9 @@ class Switcher():
 
     def get_layout(self):
         """"""
-        # это работало в X11
+        # рабочий вариант для X11:
         # print('get_layout', self.xkb.group_symbol)
         # return self.xkb.group_symbol
-        # это по идее должно работать в X11 + Wayland
         get_mru_sources = f'sudo -u {self.username} gsettings get org.gnome.desktop.input-sources mru-sources'.split()
         result = subprocess.run(get_mru_sources, stdout=subprocess.PIPE)
         result = result.stdout.decode('utf-8')[10:12]
@@ -159,9 +148,9 @@ class Switcher():
         self.keyboard.grab()
         self.keyboard.send('ctrl_left+v')
         self.kb_switch_layout()
-        self.keyboard.ungrab()
-        Timer(0.2, self.clipboard.restore).start()
-        Timer(0.2, self.get_layout).start()
+        Timer(0.10, self.keyboard.ungrab()).start()
+        Timer(0.30, self.clipboard.restore).start()
+        Timer(0.40, self.get_layout).start()
 
     def kb_manual_process(self, char: str):
         """"""
@@ -182,9 +171,9 @@ class Switcher():
         self.keyboard.grab()
         self.keyboard.send('ctrl_left+v')
         self.kb_switch_layout()
-        self.keyboard.ungrab()
-        Timer(0.2, self.clipboard.restore).start()
-        Timer(0.2, self.get_layout).start()
+        Timer(0.10, self.keyboard.ungrab()).start()
+        Timer(0.30, self.clipboard.restore).start()
+        Timer(0.40, self.get_layout).start()
 
     def caps_auto_process(self, char: str):
         """"""
@@ -219,8 +208,8 @@ class Switcher():
         self.clipboard.set_text(string)
         self.keyboard.grab()
         self.keyboard.send('ctrl_left+v')
-        self.keyboard.ungrab()
-        Timer(0.2, self.clipboard.restore).start()
+        Timer(0.10, self.keyboard.ungrab()).start()
+        Timer(0.30, self.clipboard.restore).start()
 
     def lang_fix_required(self):
         """"""

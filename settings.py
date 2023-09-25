@@ -17,4 +17,7 @@ gtk
 gtk3
 gtk4
 gtk5
+gtx
+rx
+мы
 '''
