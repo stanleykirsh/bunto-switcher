@@ -1,4 +1,7 @@
+import logging
+
 from time import sleep
+from datetime import datetime
 from threading import Thread, currentThread
 from evdev import InputDevice, UInput, list_devices, ecodes, categorize
 from . import keymap
@@ -27,6 +30,9 @@ class Keyboard:
     _GETDEVICE_DELAY = 30   # sec 30
     _EXCEPTION_DELAY = 5    # sec 5
     _TERMINATION_SIGN = False
+
+    _LOG_FILE = '/usr/share/bunto/error.log'
+    logging.basicConfig(filename=_LOG_FILE, level=logging.DEBUG)
 
     def __init__(self):
         """"""
@@ -61,8 +67,9 @@ class Keyboard:
                     self.devthreads.append(thread)
                 sleep(self._GETDEVICE_DELAY)
 
-            except Exception as e:                
-                print(f'Exception in keyboard _main_loop: {e}')                
+            except Exception as e:
+                print(f'Exception in keyboard _main_loop: {e}')
+                logging.exception(f'{datetime.now()} Exception occurred')
                 sleep(self._EXCEPTION_DELAY)
 
     def _listener_loop(self, callback, listener):
@@ -82,6 +89,7 @@ class Keyboard:
                             Event(key_code, key_name, key_char, event_type))
             except Exception as e:
                 print(f'Exception in keyboard _listener_loop: {e}')
+                logging.exception(f'{datetime.now()} Exception occurred')
                 sleep(self._EXCEPTION_DELAY)
 
     def _get_devices(self):
@@ -94,7 +102,7 @@ class Keyboard:
                         and listener.name != 'py-evdev-uinput'):
                     print('обнаружено устройство типа клавиатура:', path)
                     devpaths.append(listener.path)
-            except Exception as e:
+            except Exception as _:
                 pass
         return devpaths
 
@@ -129,7 +137,7 @@ class Keyboard:
         chars = chars.split('+')
         for char in chars:
             self.press(char)
-        
+
         sleep(self._KEY_DELAY)
         for char in reversed(chars):
             self.release(char)

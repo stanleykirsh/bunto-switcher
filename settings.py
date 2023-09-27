@@ -19,5 +19,4 @@ gtk4
 gtk5
 gtx
 rx
-мы
 '''

@@ -130,7 +130,10 @@ class Switcher():
 
     def kb_auto_process(self, char: str):
         """"""
-        if char not in self._ASWITCH_KEYS:
+        if (
+            char not in self._ASWITCH_KEYS
+            or not len(self.buffer)
+            ):
             return
 
         if not self.lang_fix_required():
@@ -148,13 +151,16 @@ class Switcher():
         self.keyboard.grab()
         self.keyboard.send('ctrl_left+v')
         self.kb_switch_layout()
-        Timer(0.10, self.keyboard.ungrab()).start()
+        Timer(0.10, self.keyboard.ungrab).start()
         Timer(0.30, self.clipboard.restore).start()
         Timer(0.40, self.get_layout).start()
 
     def kb_manual_process(self, char: str):
         """"""
-        if char not in self._MSWITCH_KEYS:
+        if (
+            char not in self._MSWITCH_KEYS
+            or not len(self.buffer)
+            ):
             return
 
         if self.buffer[-1] in self._EOW_KEYS:
@@ -171,13 +177,16 @@ class Switcher():
         self.keyboard.grab()
         self.keyboard.send('ctrl_left+v')
         self.kb_switch_layout()
-        Timer(0.10, self.keyboard.ungrab()).start()
+        Timer(0.10, self.keyboard.ungrab).start()
         Timer(0.30, self.clipboard.restore).start()
         Timer(0.40, self.get_layout).start()
 
     def caps_auto_process(self, char: str):
         """"""
-        if char not in self._MSWITCH_KEYS + self._ASWITCH_KEYS:
+        if (
+            char not in self._MSWITCH_KEYS + self._ASWITCH_KEYS
+            or not len(self.buffer) 
+            ):
             return
 
         # если в буфере первые два символа не капсом,то выходим
@@ -208,7 +217,7 @@ class Switcher():
         self.clipboard.set_text(string)
         self.keyboard.grab()
         self.keyboard.send('ctrl_left+v')
-        Timer(0.10, self.keyboard.ungrab()).start()
+        Timer(0.10, self.keyboard.ungrab).start()
         Timer(0.30, self.clipboard.restore).start()
 
     def lang_fix_required(self):
