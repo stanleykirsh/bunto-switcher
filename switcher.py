@@ -1,11 +1,10 @@
 import gi
 gi.require_version('Gtk', '3.0')
 
-from gi.repository import Gtk as gtk
-
 from mouse.mouse import Mouse
 from keyboard.keyboard import Keyboard
 from clipboard.clipboard import Clipboard
+from gi.repository import Gtk as gtk
 from settings import SYS_SWITCH_KEY
 from threading import Timer
 
@@ -20,6 +19,9 @@ class Switcher():
 
     _RUS_CHARS = """ё1234567890-=йцукенгшщзхъфывапролджэ\ячсмитьбю.Ё!"№;%:?*()_+ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭ/ЯЧСМИТЬБЮ,"""
     _ENG_CHARS = """`1234567890-=qwertyuiop[]asdfghjkl;'\zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}ASDFGHJKL:"|ZXCVBNM<>?"""
+
+    _RUS_ENG = dict(zip(_RUS_CHARS, _ENG_CHARS))
+    _ENG_RUS = dict(zip(_ENG_CHARS, _RUS_CHARS))
 
     _ASWITCH_KEYS = ['space', 'tab']
     _MSWITCH_KEYS = ['pause']
@@ -77,8 +79,6 @@ class Switcher():
             if ngram in string:
                 prob_en += 1
 
-        # print(prob_ru, prob_en)
-
         if prob_ru > prob_en:
             return 'ru'
         if prob_ru < prob_en:
@@ -107,22 +107,16 @@ class Switcher():
 
     def split_language(self, string: str):
         """"""
-        RU = str(self._RUS_CHARS+' ')
-        US = str(self._ENG_CHARS+' ')
-
         if self.initial_layout == 'us':
-            return ''.join(RU[US.find(s)] for s in string)
-        elif self.initial_layout == 'ru':
-            return string
+            return ''.join(self._ENG_RUS[s] for s in string)
+        #elif self.initial_layout == 'ru':
+        return string
 
     def translit(self, string: str):
-        RU = str(self._RUS_CHARS+' ')
-        US = str(self._ENG_CHARS+' ')
-
         if self.initial_layout == 'ru':
-            return ''.join(RU[US.find(s)] for s in string)
-        elif self.initial_layout == 'us':
-            return string
+            return ''.join(self._ENG_RUS[s] for s in string)
+        #elif self.initial_layout == 'us':
+        return string
 
     def kb_switch_layout(self):
         """"""
@@ -132,8 +126,8 @@ class Switcher():
         """"""
         if (
             char not in self._ASWITCH_KEYS
-            or not len(self.buffer)
-            ):
+            or not self.buffer
+        ):
             return
 
         if not self.lang_fix_required():
@@ -159,8 +153,12 @@ class Switcher():
         """"""
         if (
             char not in self._MSWITCH_KEYS
-            or not len(self.buffer)
-            ):
+            or not self.buffer
+            or (
+                len(self.buffer) == 1 and
+                self.buffer[-1] in self._EOW_KEYS
+                )
+        ):
             return
 
         if self.buffer[-1] in self._EOW_KEYS:
@@ -185,8 +183,8 @@ class Switcher():
         """"""
         if (
             char not in self._MSWITCH_KEYS + self._ASWITCH_KEYS
-            or not len(self.buffer) 
-            ):
+            or not self.buffer
+        ):
             return
 
         # если в буфере первые два символа не капсом,то выходим
@@ -198,9 +196,6 @@ class Switcher():
 
         if self.lang_fix_required():
             return
-
-        RU = str(self._RUS_CHARS+' ')
-        US = str(self._ENG_CHARS+' ')
 
         if self.buffer[-1] in self._EOW_KEYS:
             string = ''.join(self.buffer[:-1])
@@ -254,9 +249,12 @@ class Switcher():
         # Если приходит первый значимый символ после конца слова, то очищаем буфер.
         # Первое условие обязательно первое чтобы при пустом буфере не падало второе.
         if (
-            len(self.buffer) >= 1  # ('space', 'tab', 'enter')):
+            self.buffer
             and self.buffer[-1] in self._EOW_KEYS
-            and char in self._RUS_CHARS + self._ENG_CHARS
+            and (
+                char in self._RUS_CHARS + self._ENG_CHARS
+                or char in self._EOW_KEYS
+            )
         ):
             self.buffer.clear()
 
