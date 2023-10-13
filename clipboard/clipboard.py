@@ -1,4 +1,4 @@
-import time
+from time import sleep
 from gi.repository import Gtk, Gdk
 
 
@@ -11,7 +11,9 @@ class Clipboard:
 
     def __init__(self):
         """"""
-        pass
+        # Warm-up on init to prevent freeze in first restore
+        self.save()
+        self.restore()
 
     def clear(self):
         """"""
@@ -20,7 +22,7 @@ class Clipboard:
             if not Gtk.Clipboard.wait_is_text_available(self.clipboard):
                 if not Gtk.Clipboard.wait_is_image_available(self.clipboard):
                     return
-            time.sleep(0.01)
+            sleep(0.01)
 
     def set_text(self, text: str):
         """"""
@@ -29,7 +31,7 @@ class Clipboard:
         for _ in range(100):
             if Gtk.Clipboard.wait_is_text_available(self.clipboard):
                 return
-            time.sleep(0.01)
+            sleep(0.01)
 
     def set_image(self, pixbuf):
         """"""
@@ -38,7 +40,7 @@ class Clipboard:
         for _ in range(100):
             if Gtk.Clipboard.wait_is_image_available(self.clipboard):
                 return
-            time.sleep(0.01)
+            sleep(0.01)
 
     def get_text(self):
         """"""
@@ -61,13 +63,13 @@ class Clipboard:
         """"""
         if self.storage_text:
             self.set_text(self.storage_text)
-        else:
-            self.set_text('')
+        # else:
+        #   self.set_text('')
 
         if self.storage_image:
             self.set_image(self.storage_image)
-        else:
-            pass
+        # else:
+        #   pass
 
         self.storage_text = None
         self.storage_image = None

@@ -42,7 +42,7 @@ class Keyboard:
         """"""
         while True:
             try:
-                # Stop working thread if exist.
+                # Stop working threads if exist.
                 self._TERMINATION_SIGN = True
                 for devthread in self.devthreads:
                     devthread.join()
@@ -78,6 +78,7 @@ class Keyboard:
             try:
                 for event in listener.read_loop():
                     self.lastdevid = int(currentThread().name)
+                    if not self.controllers: continue
                     self.controller = self.controllers[self.lastdevid]
                     if event.type == ecodes.EV_KEY:
                         categorized = str(categorize(event)).split()

@@ -7,6 +7,7 @@ from clipboard.clipboard import Clipboard
 from gi.repository import Gtk as gtk
 from settings import SYS_SWITCH_KEY
 from threading import Timer
+from time import sleep
 
 import os
 import settings
@@ -19,6 +20,8 @@ class Switcher():
 
     _RUS_CHARS = """ё1234567890-=йцукенгшщзхъфывапролджэ\ячсмитьбю.Ё!"№;%:?*()_+ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭ/ЯЧСМИТЬБЮ,"""
     _ENG_CHARS = """`1234567890-=qwertyuiop[]asdfghjkl;'\zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}ASDFGHJKL:"|ZXCVBNM<>?"""
+
+    _ALL_CHARS = _RUS_CHARS + _ENG_CHARS
 
     _RUS_ENG = dict(zip(_RUS_CHARS, _ENG_CHARS))
     _ENG_RUS = dict(zip(_ENG_CHARS, _RUS_CHARS))
@@ -97,25 +100,15 @@ class Switcher():
         self.initial_layout = result
         return result
 
-    def char_upper(self, char: str):
-        """"""
-        charid = self._ENG_CHARS.find(char) + 47
-        if charid < len(self._ENG_CHARS):
-            return self._ENG_CHARS[charid]
-        else:
-            return char
-
-    def split_language(self, string: str):
+    def switch_language(self, string: str):
         """"""
         if self.initial_layout == 'us':
             return ''.join(self._ENG_RUS[s] for s in string)
-        #elif self.initial_layout == 'ru':
         return string
 
     def translit(self, string: str):
         if self.initial_layout == 'ru':
             return ''.join(self._ENG_RUS[s] for s in string)
-        #elif self.initial_layout == 'us':
         return string
 
     def kb_switch_layout(self):
@@ -134,7 +127,7 @@ class Switcher():
             return
 
         string = ''.join(self.buffer[:-1])
-        string = self.split_language(string)
+        string = self.switch_language(string)
 
         if self.buffer[-1] in self._EOW_KEYS:
             string = string + self._EOW_KEYS[self.buffer[-1]]
@@ -142,12 +135,12 @@ class Switcher():
         self.delete_last_word()
         self.clipboard.save()
         self.clipboard.set_text(string)
-        self.keyboard.grab()
+        # self.keyboard.grab()
         self.keyboard.send('ctrl_left+v')
         self.kb_switch_layout()
-        Timer(0.10, self.keyboard.ungrab).start()
-        Timer(0.30, self.clipboard.restore).start()
-        Timer(0.40, self.get_layout).start()
+        # Timer(0.10, self.keyboard.ungrab).start()
+        Timer(0.20, self.clipboard.restore).start()
+        Timer(0.30, self.get_layout).start()
 
     def kb_manual_process(self, char: str):
         """"""
@@ -163,21 +156,21 @@ class Switcher():
 
         if self.buffer[-1] in self._EOW_KEYS:
             string = ''.join(self.buffer[:-1])
-            string = self.split_language(string)
+            string = self.switch_language(string)
             string = string + self._EOW_KEYS[self.buffer[-1]]
         else:
             string = ''.join(self.buffer)
-            string = self.split_language(string)
+            string = self.switch_language(string)
 
         self.delete_last_word()
         self.clipboard.save()
         self.clipboard.set_text(string)
-        self.keyboard.grab()
+        # self.keyboard.grab()
         self.keyboard.send('ctrl_left+v')
         self.kb_switch_layout()
-        Timer(0.10, self.keyboard.ungrab).start()
-        Timer(0.30, self.clipboard.restore).start()
-        Timer(0.40, self.get_layout).start()
+        # Timer(0.10, self.keyboard.ungrab).start()
+        Timer(0.20, self.clipboard.restore).start()
+        Timer(0.30, self.get_layout).start()
 
     def caps_auto_process(self, char: str):
         """"""
@@ -210,10 +203,10 @@ class Switcher():
         self.delete_last_word()
         self.clipboard.save()
         self.clipboard.set_text(string)
-        self.keyboard.grab()
+        # self.keyboard.grab()
         self.keyboard.send('ctrl_left+v')
-        Timer(0.10, self.keyboard.ungrab).start()
-        Timer(0.30, self.clipboard.restore).start()
+        # Timer(0.10, self.keyboard.ungrab).start()
+        Timer(0.20, self.clipboard.restore).start()
 
     def lang_fix_required(self):
         """"""
@@ -252,13 +245,13 @@ class Switcher():
             self.buffer
             and self.buffer[-1] in self._EOW_KEYS
             and (
-                char in self._RUS_CHARS + self._ENG_CHARS
+                char in self._ALL_CHARS
                 or char in self._EOW_KEYS
             )
         ):
             self.buffer.clear()
 
-        if char in self._RUS_CHARS + self._ENG_CHARS:
+        if char in self._ALL_CHARS:
 
             # Ctrl + любая буква (напрмер, ctrl + v) чистят буфер и не добавляет эту букву в буфер.
             if self.keyboard.is_pressed('ctrl_left') or self.keyboard.is_pressed('ctrl_right'):
@@ -267,11 +260,14 @@ class Switcher():
 
             # Shift + любая буква переводят нажатую букву в верхний регистр.
             if self.keyboard.is_pressed('shift_left') or self.keyboard.is_pressed('shift_right'):
-                char = self.char_upper(char)
+                # char = self.char_upper(char)
+                char = char.upper()
 
             # Включенный капс переводит нажатую букву в верхний регистр.
             if self.keyboard.is_caps_locked():
-                char = self.char_upper(char)
+                # char = self.char_upper(char)
+                char = char.upper()            
+            
             self.buffer.append(char)
             return
 
@@ -285,9 +281,10 @@ class Switcher():
                 self.buffer.pop()
             return
 
-        if (char not in self._RUS_CHARS + self._ENG_CHARS
+        if (char not in self._ALL_CHARS
                 and char not in self._ASWITCH_KEYS + self._MSWITCH_KEYS
-                and char not in ('ctrl_left', 'ctrl_right', 'shift_left', 'shift_right', 'space', 'caps_lock')):
+                and char not in ('ctrl_left', 'ctrl_right', 'shift_left', 'shift_right', 'space', 'caps_lock')
+            ):
             self.buffer.clear()
 
     def on_mouse_click(self, event):
@@ -300,6 +297,11 @@ class Switcher():
         """"""
         key = event.key_char
 
+        if event.type == 'hold':
+            self.buffer.clear()
+            sleep(0.5)
+            return
+
         if event.type == 'down':
             self.update_buffer(key)
 
@@ -311,9 +313,6 @@ class Switcher():
                 self.kb_auto_process(key)
             if key in (settings.SYS_SWITCH_KEY).split('+'):
                 self.get_layout()
-
-        if event.type == 'hold':
-            self.buffer.clear()
 
     def start(self):
         """"""
