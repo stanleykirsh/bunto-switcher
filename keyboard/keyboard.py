@@ -26,7 +26,7 @@ class Keyboard:
     lastdevid = 0
     controller = None
 
-    _KEY_DELAY = 0.02       # sec 0.02, assumed 50Hz typical keyboard ratio
+    _KEY_DELAY = 0.025      # sec 0.02, assumed 50Hz typical keyboard ratio
     _GETDEVICE_DELAY = 30   # sec 30
     _EXCEPTION_DELAY = 5    # sec 5
     _TERMINATION_SIGN = False

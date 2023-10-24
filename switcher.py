@@ -103,12 +103,12 @@ class Switcher():
     def switch_language(self, string: str):
         """"""
         if self.initial_layout == 'us':
-            return ''.join(self._ENG_RUS[s] for s in string)
+            return ''.join(self._ENG_RUS[s] if s in self._ENG_RUS else s for s in string)
         return string
 
     def translit(self, string: str):
         if self.initial_layout == 'ru':
-            return ''.join(self._ENG_RUS[s] for s in string)
+            return ''.join(self._ENG_RUS[s] if s in self._ENG_RUS else s for s in string)
         return string
 
     def kb_switch_layout(self):
