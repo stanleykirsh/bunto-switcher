@@ -124,21 +124,22 @@ class Switcher():
             return
 
         if not self.lang_fix_required():
-            return
-
+            return        
+        
         string = ''.join(self.buffer[:-1])
         string = self.switch_language(string)
 
         if self.buffer[-1] in self._EOW_KEYS:
             string = string + self._EOW_KEYS[self.buffer[-1]]
 
+        self.keyboard.release(char)
         self.delete_last_word()
         self.clipboard.save()
         self.clipboard.set_text(string)
-        # self.keyboard.grab()
+        self.keyboard.grab()
         self.keyboard.send('ctrl_left+v')
         self.kb_switch_layout()
-        # Timer(0.10, self.keyboard.ungrab).start()
+        Timer(0.10, self.keyboard.ungrab).start()
         Timer(0.20, self.clipboard.restore).start()
         Timer(0.30, self.get_layout).start()
 
@@ -162,13 +163,14 @@ class Switcher():
             string = ''.join(self.buffer)
             string = self.switch_language(string)
 
+        self.keyboard.release(char)
         self.delete_last_word()
         self.clipboard.save()
         self.clipboard.set_text(string)
-        # self.keyboard.grab()
+        self.keyboard.grab()
         self.keyboard.send('ctrl_left+v')
         self.kb_switch_layout()
-        # Timer(0.10, self.keyboard.ungrab).start()
+        Timer(0.10, self.keyboard.ungrab).start()
         Timer(0.20, self.clipboard.restore).start()
         Timer(0.30, self.get_layout).start()
 
@@ -200,12 +202,13 @@ class Switcher():
             string = string[0] + string[1:].lower()
             string = self.translit(string)
 
+        self.keyboard.release(char)
         self.delete_last_word()
         self.clipboard.save()
         self.clipboard.set_text(string)
-        # self.keyboard.grab()
+        self.keyboard.grab()
         self.keyboard.send('ctrl_left+v')
-        # Timer(0.10, self.keyboard.ungrab).start()
+        Timer(0.10, self.keyboard.ungrab).start()
         Timer(0.20, self.clipboard.restore).start()
 
     def lang_fix_required(self):
@@ -305,14 +308,14 @@ class Switcher():
         if event.type == 'down':
             self.update_buffer(key)
 
-            if settings.SWITCH_TWOCAPS:
+            if settings.SWITCH_TWOCAPS:                
                 self.caps_auto_process(key)
             if settings.SWITCH_MANUAL:
                 self.kb_manual_process(key)
             if settings.SWITCH_AUTO:
                 self.kb_auto_process(key)
             if key in (settings.SYS_SWITCH_KEY).split('+'):
-                self.get_layout()
+                self.get_layout()            
 
     def start(self):
         """"""

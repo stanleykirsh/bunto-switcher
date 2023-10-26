@@ -25,8 +25,9 @@ class Keyboard:
 
     lastdevid = 0
     controller = None
+    devices = None
 
-    _KEY_DELAY = 0.025      # sec 0.02, assumed 50Hz typical keyboard ratio
+    _KEY_DELAY = 0.02       # sec 0.02, assumed 50Hz typical keyboard ratio
     _GETDEVICE_DELAY = 30   # sec 30
     _EXCEPTION_DELAY = 5    # sec 5
     _TERMINATION_SIGN = False
@@ -42,7 +43,14 @@ class Keyboard:
         """"""
         while True:
             try:
-                # Stop working threads if exist.
+                _devices = self._get_devices()
+
+                if _devices == self.devices:
+                    sleep(self._GETDEVICE_DELAY)
+                    continue
+
+                # [Re]create main thread when devices was changed.
+                # Stop working threads if exist. And create new ones.
                 self._TERMINATION_SIGN = True
                 for devthread in self.devthreads:
                     devthread.join()
@@ -52,9 +60,7 @@ class Keyboard:
                 self.controllers = []
                 self.devthreads = []
 
-                # (Re)create main thread in any case.
-                # If device configuration has been changed then it resets in every _GETDEVICE_DELAY seconds.
-                for devid, devpath in enumerate(self._get_devices()):
+                for devid, devpath in enumerate(_devices):
                     listener = InputDevice(devpath)
                     controller = UInput.from_device(devpath)
                     thread = Thread(
@@ -65,11 +71,14 @@ class Keyboard:
                     self.listeners.append(listener)
                     self.controllers.append(controller)
                     self.devthreads.append(thread)
-                sleep(self._GETDEVICE_DELAY)
+
+                self.devices = _devices
+                # sleep(self._GETDEVICE_DELAY)
 
             except Exception as e:
-                print(f'Exception in keyboard _main_loop: {e}')
+                self.devices = None
                 logging.exception(f'{datetime.now()} Exception occurred')
+                print(f'Exception in keyboard _main_loop: {e}')
                 sleep(self._EXCEPTION_DELAY)
 
     def _listener_loop(self, callback, listener):
@@ -78,7 +87,8 @@ class Keyboard:
             try:
                 for event in listener.read_loop():
                     self.lastdevid = int(currentThread().name)
-                    if not self.controllers: continue
+                    if not self.controllers:
+                        continue
                     self.controller = self.controllers[self.lastdevid]
                     if event.type == ecodes.EV_KEY:
                         categorized = str(categorize(event)).split()
@@ -89,8 +99,9 @@ class Keyboard:
                         callback(
                             Event(key_code, key_name, key_char, event_type))
             except Exception as e:
-                print(f'Exception in keyboard _listener_loop: {e}')
+                self.devices = None
                 logging.exception(f'{datetime.now()} Exception occurred')
+                print(f'Exception in keyboard _listener_loop: {e}')
                 sleep(self._EXCEPTION_DELAY)
 
     def _get_devices(self):
