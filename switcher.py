@@ -12,14 +12,14 @@ from time import sleep
 import os
 import settings
 import subprocess
-
+          
 
 class Switcher():
     """"""
     _EOW_KEYS = {'space': ' ', 'tab': '\t', 'enter': '\r\n'}
 
-    _RUS_CHARS = """ё1234567890-=йцукенгшщзхъфывапролджэ\ячсмитьбю.Ё!"№;%:?*()_+ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭ/ЯЧСМИТЬБЮ,"""
-    _ENG_CHARS = """`1234567890-=qwertyuiop[]asdfghjkl;'\zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}ASDFGHJKL:"|ZXCVBNM<>?"""
+    _RUS_CHARS = """ё1234567890-=йцукенгшщзхъфывапролджэ\\ячсмитьбю.Ё!"№;%:?*()_+ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭ/ЯЧСМИТЬБЮ,"""
+    _ENG_CHARS = """`1234567890-=qwertyuiop[]asdfghjkl;'\\zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}ASDFGHJKL:"|ZXCVBNM<>?"""
 
     _ALL_CHARS = _RUS_CHARS + _ENG_CHARS
 
@@ -40,8 +40,8 @@ class Switcher():
         self.ngrams_en = []
 
         dir_path = os.path.dirname(os.path.realpath(__file__))
-        self.ngrams_ru = self.load_ngrams((f'{dir_path}/data/ngrams-ru.txt',))
-        self.ngrams_en = self.load_ngrams((f'{dir_path}/data/ngrams-en.txt',))
+        self.ngrams_ru = set(self.load_ngrams((f'{dir_path}/data/ngrams-ru.txt',)))
+        self.ngrams_en = set(self.load_ngrams((f'{dir_path}/data/ngrams-en.txt',)))
 
         self.username = os.environ['SUDO_USER']
         self.initial_layout = self.get_layout()
@@ -124,7 +124,7 @@ class Switcher():
             return
 
         if not self.lang_fix_required():
-            return        
+            return
         
         string = ''.join(self.buffer[:-1])
         string = self.switch_language(string)
@@ -133,13 +133,15 @@ class Switcher():
             string = string + self._EOW_KEYS[self.buffer[-1]]
 
         self.keyboard.release(char)
-        self.delete_last_word()
         self.clipboard.save()
         self.clipboard.set_text(string)
-        self.keyboard.grab()
+        # self.keyboard.grab()
+        self.delete_last_word()
+        sleep(self.keyboard._KEY_DELAY)
         self.keyboard.send('ctrl_left+v')
+        sleep(self.keyboard._KEY_DELAY)
         self.kb_switch_layout()
-        Timer(0.10, self.keyboard.ungrab).start()
+        # Timer(0.10, self.keyboard.ungrab).start()
         Timer(0.20, self.clipboard.restore).start()
         Timer(0.30, self.get_layout).start()
 
@@ -163,14 +165,16 @@ class Switcher():
             string = ''.join(self.buffer)
             string = self.switch_language(string)
 
-        self.keyboard.release(char)
-        self.delete_last_word()
+        self.keyboard.release(char)        
         self.clipboard.save()
         self.clipboard.set_text(string)
-        self.keyboard.grab()
+        # self.keyboard.grab()
+        self.delete_last_word()
+        sleep(self.keyboard._KEY_DELAY)
         self.keyboard.send('ctrl_left+v')
+        sleep(self.keyboard._KEY_DELAY)
         self.kb_switch_layout()
-        Timer(0.10, self.keyboard.ungrab).start()
+        # Timer(0.10, self.keyboard.ungrab).start()
         Timer(0.20, self.clipboard.restore).start()
         Timer(0.30, self.get_layout).start()
 
@@ -202,13 +206,14 @@ class Switcher():
             string = string[0] + string[1:].lower()
             string = self.translit(string)
 
-        self.keyboard.release(char)
-        self.delete_last_word()
+        self.keyboard.release(char)        
         self.clipboard.save()
         self.clipboard.set_text(string)
-        self.keyboard.grab()
+        # self.keyboard.grab()
+        self.delete_last_word()
+        sleep(self.keyboard._KEY_DELAY)
         self.keyboard.send('ctrl_left+v')
-        Timer(0.10, self.keyboard.ungrab).start()
+        # Timer(0.10, self.keyboard.ungrab).start()
         Timer(0.20, self.clipboard.restore).start()
 
     def lang_fix_required(self):

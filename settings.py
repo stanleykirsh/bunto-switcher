@@ -10,6 +10,11 @@ SWITCH_TWOCAPS = True
 # Сочетание клавиш на которую в системе завязано переключение раскладки.
 SYS_SWITCH_KEY = 'ctrl_left+shift_left'
 
+# Приложения исключения
+APP_EXCEPTIONS = '''
+firewatch.exe
+'''
+
 # Игнорировать автопереключение
 IGNORE_WORDS = '''
 dnf

@@ -127,19 +127,17 @@ class Keyboard:
             daemon=True)
         thread.start()
 
-    def press(self, char: str, duration: float = 0):
+    def press(self, char: str):
         """"""
         key_code = ecodes.ecodes[self._char_to_key(char)]
         self.controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
         self.controller.syn()
-        sleep(duration)
 
-    def release(self, char: str, duration: float = 0):
+    def release(self, char: str):
         """"""
         key_code = ecodes.ecodes[self._char_to_key(char)]
         self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
         self.controller.syn()
-        sleep(duration)
 
     def send(self, chars: str | list):
         """"""
