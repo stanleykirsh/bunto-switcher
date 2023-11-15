@@ -74,7 +74,7 @@ def quit_on_crash():
 
 
 if __name__ == '__main__':
-    command = f'sudo nice -n -20 python /usr/share/bunto/switcher.py'
+    command = f'sudo nice -n -15 python /usr/share/bunto/switcher.py'
     switcher = subprocess.Popen(command.split())
 
     thread = threading.Thread(

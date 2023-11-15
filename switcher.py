@@ -21,6 +21,25 @@ class Switcher():
     _RUS_CHARS = """ё1234567890-=йцукенгшщзхъфывапролджэ\\ячсмитьбю.Ё!"№;%:?*()_+ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭ/ЯЧСМИТЬБЮ,"""
     _ENG_CHARS = """`1234567890-=qwertyuiop[]asdfghjkl;'\\zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}ASDFGHJKL:"|ZXCVBNM<>?"""
 
+    _THREE_CHAR_KEYS = {
+        "ru_shift_`": 'Ё',
+        "us_shift_`": '~',
+        "ru_shift_2": '"',
+        "us_shift_2": '@',
+        "ru_shift_3": '№',
+        "us_shift_3": '#',
+        "ru_shift_4": ';',
+        "us_shift_4": '$',
+        "ru_shift_6": ':',
+        "us_shift_6": '^',
+        "ru_shift_7": '?',
+        "us_shift_7": '&',
+        "ru_shift_'": 'Э',
+        "us_shift_'": '"',
+        "ru_shift_/": ',',
+        "us_shift_/": '?',
+        }
+
     _ALL_CHARS = _RUS_CHARS + _ENG_CHARS
 
     _RUS_ENG = dict(zip(_RUS_CHARS, _ENG_CHARS))
@@ -67,7 +86,7 @@ class Switcher():
         # Для слов исключений вероятность языка неопределенная.
         # Менять раскладку автоматически для них не требуется.
         if (
-            self.translit(string.strip())
+            self.translit2en(string.strip())
             and string.strip() in settings.IGNORE_WORDS.splitlines()
         ):
             return ''
@@ -102,11 +121,14 @@ class Switcher():
 
     def switch_language(self, string: str):
         """"""
-        if self.initial_layout == 'us':
-            return ''.join(self._ENG_RUS[s] if s in self._ENG_RUS else s for s in string)
+        match self.initial_layout:
+            case 'us':
+                return ''.join(self._ENG_RUS[s] if s in self._ENG_RUS else s for s in string)
+            case 'ru':
+                return ''.join(self._RUS_ENG[s] if s in self._RUS_ENG else s for s in string)
         return string
 
-    def translit(self, string: str):
+    def translit2en(self, string: str):
         if self.initial_layout == 'ru':
             return ''.join(self._ENG_RUS[s] if s in self._ENG_RUS else s for s in string)
         return string
@@ -135,13 +157,9 @@ class Switcher():
         self.keyboard.release(char)
         self.clipboard.save()
         self.clipboard.set_text(string)
-        # self.keyboard.grab()
         self.delete_last_word()
-        sleep(self.keyboard._KEY_DELAY)
         self.keyboard.send('ctrl_left+v')
-        sleep(self.keyboard._KEY_DELAY)
         self.kb_switch_layout()
-        # Timer(0.10, self.keyboard.ungrab).start()
         Timer(0.20, self.clipboard.restore).start()
         Timer(0.30, self.get_layout).start()
 
@@ -168,13 +186,9 @@ class Switcher():
         self.keyboard.release(char)        
         self.clipboard.save()
         self.clipboard.set_text(string)
-        # self.keyboard.grab()
         self.delete_last_word()
-        sleep(self.keyboard._KEY_DELAY)
         self.keyboard.send('ctrl_left+v')
-        sleep(self.keyboard._KEY_DELAY)
         self.kb_switch_layout()
-        # Timer(0.10, self.keyboard.ungrab).start()
         Timer(0.20, self.clipboard.restore).start()
         Timer(0.30, self.get_layout).start()
 
@@ -199,21 +213,18 @@ class Switcher():
         if self.buffer[-1] in self._EOW_KEYS:
             string = ''.join(self.buffer[:-1])
             string = string[0] + string[1:].lower()
-            string = self.translit(string)
+            string = self.translit2en(string)
             string = string + self._EOW_KEYS[self.buffer[-1]]
         else:
             string = ''.join(self.buffer)
             string = string[0] + string[1:].lower()
-            string = self.translit(string)
+            string = self.translit2en(string)
 
         self.keyboard.release(char)        
         self.clipboard.save()
         self.clipboard.set_text(string)
-        # self.keyboard.grab()
         self.delete_last_word()
-        sleep(self.keyboard._KEY_DELAY)
         self.keyboard.send('ctrl_left+v')
-        # Timer(0.10, self.keyboard.ungrab).start()
         Timer(0.20, self.clipboard.restore).start()
 
     def lang_fix_required(self):
@@ -266,15 +277,20 @@ class Switcher():
                 self.buffer.clear()
                 return
 
+            # Shift ...
+            if self.keyboard.is_pressed('shift_left') or self.keyboard.is_pressed('shift_right'):
+                code = f'{self.initial_layout}_shift_{char}'
+                print(code)
+                if code in self._THREE_CHAR_KEYS:
+                    char = self._THREE_CHAR_KEYS[code]
+                
             # Shift + любая буква переводят нажатую букву в верхний регистр.
             if self.keyboard.is_pressed('shift_left') or self.keyboard.is_pressed('shift_right'):
-                # char = self.char_upper(char)
                 char = char.upper()
 
             # Включенный капс переводит нажатую букву в верхний регистр.
             if self.keyboard.is_caps_locked():
-                # char = self.char_upper(char)
-                char = char.upper()            
+                char = char.upper()
             
             self.buffer.append(char)
             return

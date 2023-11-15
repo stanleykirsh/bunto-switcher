@@ -18,6 +18,10 @@
 sudo ./install
 ```
 
+Для нормальной работы необходимо отключить попап уведомление GNOME о смене раскладки. Для этого нужно установить расширение Quick Lang Switch\
+Отсюда: https://extensions.gnome.org/extension/4559/quick-lang-switch/\
+Или отсюда: https://github.com/ankostis/gnome-shell-quick-lang-switch
+
 ## Удаление
 
 Выполнить команду

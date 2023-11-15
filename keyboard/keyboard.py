@@ -27,8 +27,11 @@ class Keyboard:
     controller = None
     devices = None
 
-    _KEY_DELAY = 0.02       # sec 0.02, assumed 50Hz typical keyboard ratio
-    _GETDEVICE_DELAY = 30   # sec 30
+    # sec 0.02, assumed 50Hz typical keyboard ratio # sinse GNOME 45 works 
+    # sinse GNOME 45 works instantly, so set to 0.0
+    _KEY_DELAY = 0.0
+
+    _GETDEVICE_DELAY = 10   # sec 10
     _EXCEPTION_DELAY = 5    # sec 5
     _TERMINATION_SIGN = False
 
