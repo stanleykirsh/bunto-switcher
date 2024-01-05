@@ -277,6 +277,13 @@ class Switcher():
                 self.buffer.clear()
                 return
 
+            if (char in '0123456789'
+                and not self.keyboard.is_pressed('shift_left') 
+                and not self.keyboard.is_pressed('shift_right')):
+                print(23734897893457)
+                self.buffer.clear()
+                return            
+
             # Shift ...
             if self.keyboard.is_pressed('shift_left') or self.keyboard.is_pressed('shift_right'):
                 code = f'{self.initial_layout}_shift_{char}'
@@ -291,25 +298,29 @@ class Switcher():
             # Включенный капс переводит нажатую букву в верхний регистр.
             if self.keyboard.is_caps_locked():
                 char = char.upper()
-            
+
+            print('self.buffer.append(char)', char)
             self.buffer.append(char)
             return
 
-        #  Символы конца строки тоже добавляем в буфер.
-        if char in self._EOW_KEYS:  # ('space', 'tab', 'enter'):
-            self.buffer.append(char)
-            return
+        if char not in self._ALL_CHARS:
 
-        if char in ('backspace'):
-            if self.buffer:
-                self.buffer.pop()
-            return
+            #  Символы конца строки тоже добавляем в буфер.
+            if char in self._EOW_KEYS:  # ('space', 'tab', 'enter'):
+                self.buffer.append(char)
+                return
 
-        if (char not in self._ALL_CHARS
-                and char not in self._ASWITCH_KEYS + self._MSWITCH_KEYS
-                and char not in ('ctrl_left', 'ctrl_right', 'shift_left', 'shift_right', 'space', 'caps_lock')
-            ):
-            self.buffer.clear()
+            if char in ('backspace'):
+                if self.buffer:
+                    self.buffer.pop()
+                return
+
+            if (#char not in self._ALL_CHARS
+                    # and 
+                    char not in self._ASWITCH_KEYS + self._MSWITCH_KEYS
+                    and char not in ('ctrl_left', 'ctrl_right', 'shift_left', 'shift_right', 'space', 'caps_lock')
+                ):
+                self.buffer.clear()
 
     def on_mouse_click(self, event):
         """"""
