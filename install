@@ -18,7 +18,9 @@ cp ./bunto.desktop /usr/share/applications/
 sudo chown $SUDO_USER: /usr/share/applications/bunto.desktop
 
 # Добавляем приложение в автозапуск.
+# Предварительно создаем директорию autostart если она отсутствует
 echo Добавляю приложение в автозапуск...
+mkdir -p /home/$SUDO_USER/.config/autostart/
 cp ./bunto.desktop /home/$SUDO_USER/.config/autostart/
 sudo chown $SUDO_USER: /home/$SUDO_USER/.config/autostart/bunto.desktop
 
@@ -54,3 +56,6 @@ grep -qxF "$SUDO_USER ALL=(ALL) NOPASSWD: /usr/bin/nice" /etc/sudoers ||
     echo "$SUDO_USER ALL=(ALL) NOPASSWD: /usr/bin/nice" >> /etc/sudoers; }
 
 echo Готово!
+echo
+echo Для вступления в силу изменений требуется перезагрузка.
+echo

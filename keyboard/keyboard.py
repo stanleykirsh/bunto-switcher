@@ -27,7 +27,7 @@ class Keyboard:
     controller = None
     devices = None
 
-    # sec 0.02, assumed 50Hz typical keyboard ratio # sinse GNOME 45 works 
+    # sec 0.02, assumed 50Hz typical keyboard ratio # sinse GNOME 45 works
     # sinse GNOME 45 works instantly, so set to 0.0
     _KEY_DELAY = 0.0
 
@@ -48,9 +48,11 @@ class Keyboard:
             try:
                 _devices = self._get_devices()
 
-                if _devices == self.devices:
-                    sleep(self._GETDEVICE_DELAY)
-                    continue
+                # сделать больше _GETDEVICE_DELAY и убрать continue?
+                # пусть пересоздает всегда...
+                # if _devices == self.devices:
+                #    sleep(self._GETDEVICE_DELAY)
+                #    continue
 
                 # [Re]create main thread when devices was changed.
                 # Stop working threads if exist. And create new ones.
@@ -144,24 +146,24 @@ class Keyboard:
 
     def send(self, chars: str | list):
         """"""
-        if chars == ' ':
-            chars = 'space'
-
         chars = chars.split('+')
         for char in chars:
-            self.press(char)
+            key_code = ecodes.ecodes[self._char_to_key(char)]
+            self.controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
 
         sleep(self._KEY_DELAY)
         for char in reversed(chars):
-            self.release(char)
+            key_code = ecodes.ecodes[self._char_to_key(char)]
+            self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
+        self.controller.syn()
 
     def type(self, text: str | list):
         """"""
         for char in text:
-            self.press(char)
-            sleep(self._KEY_DELAY)
-            self.release(char)
-            sleep(self._KEY_DELAY)
+            key_code = ecodes.ecodes[self._char_to_key(char)]
+            self.controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
+            self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
+        self.controller.syn()
 
     def is_pressed(self, key_char):
         """"""

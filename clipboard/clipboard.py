@@ -18,15 +18,15 @@ class Clipboard:
     def clear(self):
         """"""
         self.clipboard.clear()
-        for _ in range(100):
+        """for _ in range(100):
             if not Gtk.Clipboard.wait_is_text_available(self.clipboard):
                 if not Gtk.Clipboard.wait_is_image_available(self.clipboard):
                     return
-            sleep(0.01)
+            sleep(0.01)"""
 
     def set_text(self, text: str):
         """"""
-        self.clear()
+        # self.clear()
         self.clipboard.set_text(text, -1)
         for _ in range(100):
             if Gtk.Clipboard.wait_is_text_available(self.clipboard):
@@ -35,7 +35,7 @@ class Clipboard:
 
     def set_image(self, pixbuf):
         """"""
-        self.clear()
+        # self.clear()
         self.clipboard.set_image(pixbuf)
         for _ in range(100):
             if Gtk.Clipboard.wait_is_image_available(self.clipboard):
@@ -63,13 +63,9 @@ class Clipboard:
         """"""
         if self.storage_text:
             self.set_text(self.storage_text)
-        # else:
-        #   self.set_text('')
 
         if self.storage_image:
             self.set_image(self.storage_image)
-        # else:
-        #   pass
 
         self.storage_text = None
         self.storage_image = None

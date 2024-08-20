@@ -1,3 +1,5 @@
+VERSION = "24.06.10"
+
 # Исправлять раскладку автоматически.
 SWITCH_AUTO = True
 
@@ -8,7 +10,7 @@ SWITCH_MANUAL = True
 SWITCH_TWOCAPS = True
 
 # Сочетание клавиш на которую в системе завязано переключение раскладки.
-SYS_SWITCH_KEY = 'ctrl_left+shift_left'
+SYS_SWITCH_KEY = "ctrl_left+shift_left"
 
 # Приложения исключения
 APP_EXCEPTIONS = '''
@@ -25,4 +27,5 @@ gtk5
 gtx
 rx
 hdd
+zyltrc
 '''

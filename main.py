@@ -15,6 +15,8 @@ gi.require_version('AppIndicator3', '0.1')
 from gi.repository import AppIndicator3 as appindicator
 from gi.repository import Gtk as gtk
 
+from settings import VERSION
+
 import subprocess
 import threading
 import time
@@ -46,24 +48,31 @@ def main():
 
 def build_menu():
     menu = gtk.Menu()
+    item_title_version = gtk.MenuItem.new_with_label(f'Версия {VERSION}')
+    item_title_version.connect('activate', show_log)
+    ####
+    menu.append(item_title_version)
     item_action = gtk.MenuItem.new_with_label('Настройки')
-    item_action.connect('activate', settings)
+    item_action.connect('activate', show_settings)
     menu.append(item_action)
+    ####
     item_quit = gtk.MenuItem.new_with_label('Выход')
     item_quit.connect('activate', quit)
     menu.append(item_quit)
     menu.show_all()
     return menu
 
+def show_log(source):
+    subprocess.run(['xdg-open', '/usr/share/bunto/error.log'])
 
-def settings(source):
+def show_settings(source):
     subprocess.run(['xdg-open', '/usr/share/bunto/settings.py'])
 
 
 def quit(source):
     switcher.terminate()
     while switcher.poll() is None:
-        time.sleep(0.2)
+        time.sleep(1) #0.2
     gtk.main_quit()
 
 

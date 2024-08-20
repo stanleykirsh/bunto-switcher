@@ -121,21 +121,19 @@ class Switcher():
 
     def switch_language(self, string: str):
         """"""
+        # Игнорировать space, enter, tab...
+        _EXCEPTIONS = ("space", "tab", "enter")
         match self.initial_layout:
             case 'us':
-                return ''.join(self._ENG_RUS[s] if s in self._ENG_RUS else s for s in string)
+                return ''.join(self._ENG_RUS[s] if (s in self._ENG_RUS and s not in _EXCEPTIONS) else s for s in string)
             case 'ru':
-                return ''.join(self._RUS_ENG[s] if s in self._RUS_ENG else s for s in string)
+                return ''.join(self._RUS_ENG[s] if (s in self._RUS_ENG and s not in _EXCEPTIONS) else s for s in string)
         return string
 
     def translit2en(self, string: str):
         if self.initial_layout == 'ru':
             return ''.join(self._ENG_RUS[s] if s in self._ENG_RUS else s for s in string)
         return string
-
-    def kb_switch_layout(self):
-        """"""
-        self.keyboard.send(SYS_SWITCH_KEY)
 
     def kb_auto_process(self, char: str):
         """"""
@@ -159,7 +157,7 @@ class Switcher():
         self.clipboard.set_text(string)
         self.delete_last_word()
         self.keyboard.send('ctrl_left+v')
-        self.kb_switch_layout()
+        self.keyboard.send(SYS_SWITCH_KEY)
         Timer(0.20, self.clipboard.restore).start()
         Timer(0.30, self.get_layout).start()
 
@@ -188,7 +186,7 @@ class Switcher():
         self.clipboard.set_text(string)
         self.delete_last_word()
         self.keyboard.send('ctrl_left+v')
-        self.kb_switch_layout()
+        self.keyboard.send(SYS_SWITCH_KEY)
         Timer(0.20, self.clipboard.restore).start()
         Timer(0.30, self.get_layout).start()
 
@@ -253,8 +251,7 @@ class Switcher():
 
     def delete_last_word(self):
         """"""
-        for _ in self.buffer:
-            self.keyboard.send('backspace')
+        self.keyboard.type(["backspace"]*len(self.buffer))
 
     def update_buffer(self, char: str):
         """"""
@@ -272,7 +269,7 @@ class Switcher():
 
         if char in self._ALL_CHARS:
 
-            # Ctrl + любая буква (напрмер, ctrl + v) чистят буфер и не добавляет эту букву в буфер.
+            # Ctrl + любая буква (например, ctrl + v) чистят буфер и не добавляет эту букву в буфер.
             if self.keyboard.is_pressed('ctrl_left') or self.keyboard.is_pressed('ctrl_right'):
                 self.buffer.clear()
                 return
@@ -280,14 +277,12 @@ class Switcher():
             if (char in '0123456789'
                 and not self.keyboard.is_pressed('shift_left') 
                 and not self.keyboard.is_pressed('shift_right')):
-                print(23734897893457)
                 self.buffer.clear()
                 return            
 
             # Shift ...
             if self.keyboard.is_pressed('shift_left') or self.keyboard.is_pressed('shift_right'):
                 code = f'{self.initial_layout}_shift_{char}'
-                print(code)
                 if code in self._THREE_CHAR_KEYS:
                     char = self._THREE_CHAR_KEYS[code]
                 
@@ -299,7 +294,6 @@ class Switcher():
             if self.keyboard.is_caps_locked():
                 char = char.upper()
 
-            print('self.buffer.append(char)', char)
             self.buffer.append(char)
             return
 
@@ -315,8 +309,7 @@ class Switcher():
                     self.buffer.pop()
                 return
 
-            if (#char not in self._ALL_CHARS
-                    # and 
+            if (
                     char not in self._ASWITCH_KEYS + self._MSWITCH_KEYS
                     and char not in ('ctrl_left', 'ctrl_right', 'shift_left', 'shift_right', 'space', 'caps_lock')
                 ):
@@ -324,7 +317,6 @@ class Switcher():
 
     def on_mouse_click(self, event):
         """"""
-        print('on_mouse_click')
         self.get_layout()
         self.buffer.clear()
 
