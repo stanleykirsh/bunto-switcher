@@ -22,22 +22,22 @@ class Switcher():
     _ENG_CHARS = """`1234567890-=qwertyuiop[]asdfghjkl;'\\zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}ASDFGHJKL:"|ZXCVBNM<>?"""
 
     _THREE_CHAR_KEYS = {
-        "ru_shift_`": 'Ё',
-        "us_shift_`": '~',
-        "ru_shift_2": '"',
-        "us_shift_2": '@',
-        "ru_shift_3": '№',
-        "us_shift_3": '#',
-        "ru_shift_4": ';',
-        "us_shift_4": '$',
-        "ru_shift_6": ':',
-        "us_shift_6": '^',
-        "ru_shift_7": '?',
-        "us_shift_7": '&',
-        "ru_shift_'": 'Э',
-        "us_shift_'": '"',
-        "ru_shift_/": ',',
-        "us_shift_/": '?',
+        "ru_shift_`": 'Ё', "us_shift_`": '~',
+        "ru_shift_1": '!', "us_shift_1": '!',
+        "ru_shift_2": '"', "us_shift_2": '@',
+        "ru_shift_3": '№', "us_shift_3": '#',
+        "ru_shift_4": ';', "us_shift_4": '$',
+        "ru_shift_5": '%', "us_shift_5": '%',        
+        "ru_shift_6": ':', "us_shift_6": '^',
+        "ru_shift_7": '?', "us_shift_7": '&',
+        "ru_shift_8": '*', "us_shift_8": '*',
+        "ru_shift_9": '(', "us_shift_9": '(',
+        "ru_shift_0": ')', "us_shift_0": ')',
+        "ru_shift_-": '_', "us_shift_-": '_',
+        "ru_shift_=": '+', "us_shift_=": '+',        
+        "ru_shift_'": 'Э', "us_shift_'": '"',
+        "ru_shift_/": ',', "us_shift_/": '?',
+        "ru_shift_\\": '/', "us_shift_\\": '|',
         }
 
     _ALL_CHARS = _RUS_CHARS + _ENG_CHARS
@@ -274,11 +274,11 @@ class Switcher():
                 self.buffer.clear()
                 return
 
-            if (char in '0123456789'
+            """if (char in '0123456789'
                 and not self.keyboard.is_pressed('shift_left') 
                 and not self.keyboard.is_pressed('shift_right')):
                 self.buffer.clear()
-                return            
+                return"""            
 
             # Shift ...
             if self.keyboard.is_pressed('shift_left') or self.keyboard.is_pressed('shift_right'):
@@ -305,8 +305,9 @@ class Switcher():
                 return
 
             if char in ('backspace'):
-                if self.buffer:
-                    self.buffer.pop()
+                # if self.buffer:
+                #     self.buffer.pop()
+                self.buffer.clear()
                 return
 
             if (
@@ -324,13 +325,14 @@ class Switcher():
         """"""
         key = event.key_char
 
-        if event.type == 'hold':
+        """if event.type == 'hold':
             self.buffer.clear()
             sleep(0.5)
-            return
+            return"""
 
         if event.type == 'down':
             self.update_buffer(key)
+            # print(self.buffer)
 
             if settings.SWITCH_TWOCAPS:                
                 self.caps_auto_process(key)

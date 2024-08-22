@@ -1,4 +1,3 @@
-from time import sleep
 from gi.repository import Gtk, Gdk
 
 
@@ -18,41 +17,26 @@ class Clipboard:
     def clear(self):
         """"""
         self.clipboard.clear()
-        """for _ in range(100):
-            if not Gtk.Clipboard.wait_is_text_available(self.clipboard):
-                if not Gtk.Clipboard.wait_is_image_available(self.clipboard):
-                    return
-            sleep(0.01)"""
 
     def set_text(self, text: str):
         """"""
-        # self.clear()
+        self.clipboard.clear()
         self.clipboard.set_text(text, -1)
-        for _ in range(100):
-            if Gtk.Clipboard.wait_is_text_available(self.clipboard):
-                return
-            sleep(0.01)
+        Gtk.Clipboard.wait_is_text_available(self.clipboard)
 
     def set_image(self, pixbuf):
         """"""
-        # self.clear()
+        self.clipboard.clear()
         self.clipboard.set_image(pixbuf)
-        for _ in range(100):
-            if Gtk.Clipboard.wait_is_image_available(self.clipboard):
-                return
-            sleep(0.01)
+        Gtk.Clipboard.wait_is_image_available(self.clipboard)
 
     def get_text(self):
         """"""
-        if Gtk.Clipboard.wait_is_text_available(self.clipboard):
-            return Gtk.Clipboard.wait_for_text(self.clipboard)
-        return None
+        return Gtk.Clipboard.wait_for_text(self.clipboard)
 
     def get_image(self):
         """"""
-        if Gtk.Clipboard.wait_is_image_available(self.clipboard):
-            return Gtk.Clipboard.wait_for_image(self.clipboard)
-        return None
+        return Gtk.Clipboard.wait_for_image(self.clipboard)
 
     def save(self):
         """"""

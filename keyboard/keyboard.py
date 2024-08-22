@@ -78,7 +78,7 @@ class Keyboard:
                     self.devthreads.append(thread)
 
                 self.devices = _devices
-                # sleep(self._GETDEVICE_DELAY)
+                sleep(self._GETDEVICE_DELAY)
 
             except Exception as e:
                 self.devices = None
