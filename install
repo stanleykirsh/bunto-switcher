@@ -10,7 +10,7 @@ rm -rf /usr/share/bunto/*
 # Копируем файлы приложения кроме некоторых исключений !().
 echo Копирую файлы...
 shopt -s extglob
-cp -R ./!(notes|utils|.vscode|todo.txt|__pycache__) /usr/share/bunto/
+cp -R ./!(notes|utils|.vscode|todo.txt|.gif|__pycache__) /usr/share/bunto/
 
 # Добавляем приложение в обзор приложений.
 echo Добавляю приложение в список программ...
