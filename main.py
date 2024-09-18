@@ -45,7 +45,7 @@ class SwitcherProcess:
             switcher_process.TERMINATE = True
             switcher_process.process.terminate()
             while switcher_process.process.poll() is None:
-                time.sleep(1)
+                time.sleep(0.1)
 
 
 def show_log(source):
