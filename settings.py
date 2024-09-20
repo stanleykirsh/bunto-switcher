@@ -1,4 +1,4 @@
-VERSION = "24.08.24"
+VERSION = "24.09.20"
 
 # Исправлять раскладку автоматически.
 SWITCH_AUTO = True
@@ -10,7 +10,7 @@ SWITCH_MANUAL = True
 SWITCH_TWOCAPS = True
 
 # Сочетание клавиш на которую в системе завязано переключение раскладки.
-SYS_SWITCH_KEY = "ctrl_left+shift_left"
+SYS_SWITCH_KEY = ["ctrl_left", "shift_left"]
 
 # Приложения исключения
 APP_EXCEPTIONS = '''

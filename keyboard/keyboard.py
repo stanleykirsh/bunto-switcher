@@ -132,43 +132,50 @@ class Keyboard:
             daemon=True)
         thread.start()
 
-    def press(self, char: str):
+    def press(self, key: int | str):
         """"""
-        key_code = ecodes.ecodes[self._char_to_key(char)]
+        key_code = key
+        if isinstance(key, str): key_code = ecodes.ecodes[self._char_to_key(key)]
         self.controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
         self.controller.syn()
 
-    def release(self, char: str):
+    def release(self, key: int | str):
         """"""
-        key_code = ecodes.ecodes[self._char_to_key(char)]
+        key_code = key
+        if isinstance(key, str): key_code = ecodes.ecodes[self._char_to_key(key)]
         self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
         self.controller.syn()
 
-    def send(self, chars: str | list):
+    def send(self, keys: int | str | list):
         """"""
-        chars = chars.split('+')
-        for char in chars:
-            key_code = ecodes.ecodes[self._char_to_key(char)]
+        # keys = keys.split('+')
+        for key in keys:
+            key_code = key
+            if isinstance(key, str): key_code = ecodes.ecodes[self._char_to_key(key)]
             self.controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
 
         sleep(self._KEY_DELAY)
-        for char in reversed(chars):
-            key_code = ecodes.ecodes[self._char_to_key(char)]
+        for key in reversed(keys):
+            key_code = key
+            if isinstance(key, str): key_code = ecodes.ecodes[self._char_to_key(key)]
             self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
         self.controller.syn()
 
-    def type(self, text: str | list):
+    def type(self, text: int | str | list):
         """"""
-        for char in text:
-            key_code = ecodes.ecodes[self._char_to_key(char)]
+        for key in text:
+            key_code = key          
+            if isinstance(key, str): key_code = ecodes.ecodes[self._char_to_key(key)]
             self.controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
             self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
         self.controller.syn()
 
-    def is_pressed(self, key_char):
-        """"""
+    def is_pressed(self, key: int | str):
+        """"""        
+        key_code = key
         listener = self.listeners[self.lastdevid]
-        if self._char_to_code(key_char) in listener.active_keys(verbose=False):
+        if isinstance(key, str): key_code = self._char_to_code(key)        
+        if key_code in listener.active_keys(verbose=False):
             return True
         return False
 
