@@ -146,7 +146,7 @@ class Keyboard:
         self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
         self.controller.syn()
 
-    def send(self, keys: int | str | list):
+    def send(self, keys: list[int] | list[str]):
         """"""
         # keys = keys.split('+')
         for key in keys:

@@ -49,12 +49,10 @@ class Switcher():
 
     def get_layout_probability(self, string: str):
         """"""
-        STRIP_US = ''',./<>?`~!@#$%^&*()_-=+|[]{};:'"'''
-        STRIP_RU = '''@#$^&/?'''
+        LITERALS = '''qwertyuiopasdfghjklzxcvbnmёйцукенгшщзхъфывапролджэячсмитьбю'''
 
         string = string.lower()
-        for s in STRIP_US + STRIP_RU:
-            string = string.replace(s, ' ')
+        string = ''.join([s for s in string if s in LITERALS])
 
         # Для слов исключений вероятность языка неопределенная.
         # Менять раскладку автоматически для них не требуется.
@@ -86,11 +84,6 @@ class Switcher():
         self.initial_layout = result
         return result
 
-    def translit2en(self, string: str):
-        if self.initial_layout == 'ru':
-            return ''.join(self._ENG_RUS[s] if s in self._ENG_RUS else s for s in string)
-        return string
-
     def kb_auto_process(self, key_code: int):
         """"""
         if (
@@ -110,7 +103,7 @@ class Switcher():
         self.clipboard.set_text(string)
         self.delete_last_word()
         self.keyboard.send([29, 47]) # ctrl_left+v
-        self.keyboard.send(SYS_SWITCH_KEY)
+        Timer(0.70, self.keyboard.send(SYS_SWITCH_KEY)).start()
         Timer(0.20, self.clipboard.restore).start()
         Timer(0.30, self.get_layout).start()
 
@@ -126,12 +119,12 @@ class Switcher():
         if self.initial_layout == 'us': target_layout='ru'
         string = self.decode_buffer(target_layout=target_layout)
 
-        self.keyboard.release(key_code)        
+        self.keyboard.release(key_code)
         self.clipboard.save()
         self.clipboard.set_text(string)
         self.delete_last_word()
         self.keyboard.send([29, 47]) # ctrl_left+v
-        self.keyboard.send(SYS_SWITCH_KEY)
+        Timer(0.70, self.keyboard.send(SYS_SWITCH_KEY)).start()
         Timer(0.20, self.clipboard.restore).start()
         Timer(0.30, self.get_layout).start()
 
@@ -282,14 +275,6 @@ class Switcher():
             key_code = int(event.key_code)
             
             self.update_buffer(key_code)
-
-            """d = {}
-            for i, v in enumerate(_KEY_MAP):
-                kk = _KEY_MAP[i]
-                cyr = self._R[i]
-                lat = self._E[i]
-                d[kk] = {"ru":cyr, "us":lat}
-            print(d)"""
 
             if settings.SWITCH_TWOCAPS:                
                 self.caps_auto_process(key_code)
