@@ -59,15 +59,8 @@ class Switcher():
         if string.strip() in settings.IGNORE_WORDS.splitlines():
             return ''
 
-        prob_ru = 0
-        for ngram in self.ngrams_ru:
-            if ngram in string:
-                prob_ru += 1
-
-        prob_en = 0
-        for ngram in self.ngrams_en:
-            if ngram in string:
-                prob_en += 1
+        prob_ru = sum((1 for ng in self.ngrams_ru if ng in string))
+        prob_en = sum((1 for ng in self.ngrams_en if ng in string))
 
         if prob_ru > prob_en: return 'ru'
         if prob_ru < prob_en: return 'us'
@@ -75,9 +68,6 @@ class Switcher():
 
     def get_layout(self):
         """"""
-        # рабочий вариант для X11:
-        # print('get_layout', self.xkb.group_symbol)
-        # return self.xkb.group_symbol
         get_mru_sources = f'sudo -u {self.username} gsettings get org.gnome.desktop.input-sources mru-sources'.split()
         result = subprocess.run(get_mru_sources, stdout=subprocess.PIPE)
         result = result.stdout.decode('utf-8')[10:12]
@@ -88,24 +78,29 @@ class Switcher():
         """"""
         if (
             not self.buffer
-            or key_code not in _ASWITCH_KEY_CODES            
+            or key_code not in _ASWITCH_KEY_CODES
         ):
             return
 
         target_layout = self.get_target_layout()
-        if target_layout == self.initial_layout:
-            return
-        
         string = self.decode_buffer(target_layout=target_layout)
+
+        # не исправляем если раскладка та же
+        if target_layout == self.initial_layout:
+            return        
+
+        # не исправляем аббревиатуры капсом
+        if string.isupper():
+            return        
 
         self.keyboard.release(key_code)
         self.clipboard.save()
         self.clipboard.set_text(string)
         self.delete_last_word()
         self.keyboard.send([29, 47]) # ctrl_left+v
-        Timer(0.70, self.keyboard.send(SYS_SWITCH_KEY)).start()
+        Timer(0.10, self.keyboard.send, kwargs={'keys': SYS_SWITCH_KEY}).start()
         Timer(0.20, self.clipboard.restore).start()
-        Timer(0.30, self.get_layout).start()
+        self.initial_layout = target_layout
 
     def kb_manual_process(self, key_code: int):
         """"""
@@ -124,9 +119,9 @@ class Switcher():
         self.clipboard.set_text(string)
         self.delete_last_word()
         self.keyboard.send([29, 47]) # ctrl_left+v
-        Timer(0.70, self.keyboard.send(SYS_SWITCH_KEY)).start()
+        Timer(0.10, self.keyboard.send, kwargs={'keys': SYS_SWITCH_KEY}).start()
         Timer(0.20, self.clipboard.restore).start()
-        Timer(0.30, self.get_layout).start()
+        self.initial_layout = target_layout
 
     def caps_auto_process(self, key_code: int):
         """"""
@@ -283,7 +278,7 @@ class Switcher():
             if settings.SWITCH_AUTO:
                 self.kb_auto_process(key_code)
             if key_char in (settings.SYS_SWITCH_KEY):
-                self.get_layout()            
+                self.get_layout()
 
     def start(self):
         """"""
