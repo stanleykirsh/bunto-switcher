@@ -25,7 +25,7 @@ import os
 
 APPINDICATOR_ID = 'buntoappindicator'
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
-SWITCHER_COMMAND = f'sudo nice -n -15 python /usr/share/bunto/switcher.py'
+SWITCHER_COMMAND = f'sudo nice -n -18 python /usr/share/bunto/switcher.py'
 
 
 class SwitcherProcess:

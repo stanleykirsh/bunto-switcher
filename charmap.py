@@ -1,8 +1,8 @@
 # space = 57, tab = 15, enter = 28
 # {'space': ' ', 'tab': '\t', 'enter': '\r\n'}
-_EOW_KEY_CODES = [57,15,28]
+EOW_KEY_CODES = [57,15,28]
 
-_KEY_MAP = {
+KEY_MAP = {
     41: {'ru': 'ё', 'us': '`', 'ru_': 'Ё', 'us_': '~'},
     2: {'ru': '1', 'us': '1', 'ru_': '!', 'us_': '!'},
     3: {'ru': '2', 'us': '2', 'ru_': '"', 'us_': '@'},
@@ -51,9 +51,11 @@ _KEY_MAP = {
     52: {'ru': 'ю', 'us': '.', 'ru_': 'Ю', 'us_': '>'},
     53: {'ru': '.', 'us': '/', 'ru_': ',', 'us_': '?'}}
 
-_KEY_MAP[57] = {'ru': ' ', 'us': ' ', 'ru_': ' ', 'us_': ' '} # space
-_KEY_MAP[15] = {'ru': '\t', 'us': '\t', 'ru_': '\t', 'us_': '\t'} # tab
-_KEY_MAP[28] = {'ru': '\r\n', 'us': '\r\n', 'ru_': '\r\n', 'us_': '\r\n'} # enter
+KEY_MAP[57] = {'ru': ' ', 'us': ' ', 'ru_': ' ', 'us_': ' '} # space
+KEY_MAP[15] = {'ru': '\t', 'us': '\t', 'ru_': '\t', 'us_': '\t'} # tab
+KEY_MAP[28] = {'ru': '\r\n', 'us': '\r\n', 'ru_': '\r\n', 'us_': '\r\n'} # enter
 
-_ASWITCH_KEY_CODES = [57, 15] # space, tab
-_MSWITCH_KEY_CODES = [119] # pause
+INSERT_KEY_CODE = [29, 47] # ctrl_left+v
+
+ASWITCH_KEY_CODES = [57, 15] # space, tab
+MSWITCH_KEY_CODES = [119] # pause

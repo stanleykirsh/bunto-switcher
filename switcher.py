@@ -8,10 +8,11 @@ from gi.repository import Gtk as gtk
 from settings import SYS_SWITCH_KEY
 from threading import Timer
 from charmap import (
-    _EOW_KEY_CODES, 
-    _ASWITCH_KEY_CODES, 
-    _MSWITCH_KEY_CODES, 
-    _KEY_MAP)
+    EOW_KEY_CODES,
+    ASWITCH_KEY_CODES,
+    MSWITCH_KEY_CODES,
+    INSERT_KEY_CODE,
+    KEY_MAP)
 
 import os
 import settings
@@ -78,7 +79,7 @@ class Switcher():
         """"""
         if (
             not self.buffer
-            or key_code not in _ASWITCH_KEY_CODES
+            or key_code not in ASWITCH_KEY_CODES
         ):
             return
 
@@ -97,7 +98,7 @@ class Switcher():
         self.clipboard.save()
         self.clipboard.set_text(string)
         self.delete_last_word()
-        self.keyboard.send([29, 47]) # ctrl_left+v
+        self.keyboard.send(INSERT_KEY_CODE)
         Timer(0.10, self.keyboard.send, kwargs={'keys': SYS_SWITCH_KEY}).start()
         Timer(0.20, self.clipboard.restore).start()
         self.initial_layout = target_layout
@@ -106,7 +107,7 @@ class Switcher():
         """"""
         if (
             not self.buffer
-            or key_code not in _MSWITCH_KEY_CODES
+            or key_code not in MSWITCH_KEY_CODES
         ):
             return
         
@@ -118,7 +119,7 @@ class Switcher():
         self.clipboard.save()
         self.clipboard.set_text(string)
         self.delete_last_word()
-        self.keyboard.send([29, 47]) # ctrl_left+v
+        self.keyboard.send(INSERT_KEY_CODE)
         Timer(0.10, self.keyboard.send, kwargs={'keys': SYS_SWITCH_KEY}).start()
         Timer(0.20, self.clipboard.restore).start()
         self.initial_layout = target_layout
@@ -127,7 +128,7 @@ class Switcher():
         """"""
         if (
             not self.buffer
-            or key_code not in _MSWITCH_KEY_CODES + _ASWITCH_KEY_CODES            
+            or key_code not in MSWITCH_KEY_CODES + ASWITCH_KEY_CODES            
         ):
             return
 
@@ -151,7 +152,7 @@ class Switcher():
         self.clipboard.save()
         self.clipboard.set_text(string)
         self.delete_last_word()
-        self.keyboard.send([29, 47]) # ctrl_left+v
+        self.keyboard.send(INSERT_KEY_CODE)
         Timer(0.20, self.clipboard.restore).start()
 
     def get_target_layout(self):
@@ -208,8 +209,8 @@ class Switcher():
 
             _target_layout = target_layout + '_' if capitalize else target_layout
 
-            if key_code in _KEY_MAP:
-                char = _KEY_MAP[key_code][_target_layout]
+            if key_code in KEY_MAP:
+                char = KEY_MAP[key_code][_target_layout]
 
             decoded_str += char
         return decoded_str
@@ -218,9 +219,9 @@ class Switcher():
         """"""
         # Не многоязыковая клавиша или не клавиша переключения
         if (
-                key_code not in _KEY_MAP
-                and key_code not in _ASWITCH_KEY_CODES
-                and key_code not in _MSWITCH_KEY_CODES
+                key_code not in KEY_MAP
+                and key_code not in ASWITCH_KEY_CODES
+                and key_code not in MSWITCH_KEY_CODES
                 and key_code not in (29, 97, 42, 54, 57, 58)
                 # ctrl_left, ctrl_right, shift_left, shift_right, space, caps_lock
             ):
@@ -237,18 +238,18 @@ class Switcher():
         # Первое условие обязательно первое чтобы при пустом буфере не падало второе.
         if (
             self.buffer
-            and int(self.buffer[-1][:3]) in _EOW_KEY_CODES
-            and (key_code in _KEY_MAP or key_code in _EOW_KEY_CODES)
+            and int(self.buffer[-1][:3]) in EOW_KEY_CODES
+            and (key_code in KEY_MAP or key_code in EOW_KEY_CODES)
         ):
             self.buffer.clear()
 
         # Многоязыковая клавиша
-        if key_code in _KEY_MAP:
+        if key_code in KEY_MAP:
             self.buffer.append(self.encode_key(key_code))
             return
 
         # Конец слова
-        if key_code in _EOW_KEY_CODES:
+        if key_code in EOW_KEY_CODES:
             self.buffer.append(self.encode_key(key_code))
             return
 
