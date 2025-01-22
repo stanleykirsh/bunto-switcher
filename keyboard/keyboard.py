@@ -2,7 +2,7 @@ import logging
 
 from time import sleep
 from datetime import datetime
-from threading import Thread, currentThread
+from threading import Thread, current_thread
 from evdev import InputDevice, UInput, list_devices, ecodes, categorize
 from . import keymap
 
@@ -91,7 +91,7 @@ class Keyboard:
         while not self._TERMINATION_SIGN:
             try:
                 for event in listener.read_loop():
-                    self.lastdevid = int(currentThread().name)
+                    self.lastdevid = int(current_thread().name)
                     if not self.controllers:
                         continue
                     self.controller = self.controllers[self.lastdevid]

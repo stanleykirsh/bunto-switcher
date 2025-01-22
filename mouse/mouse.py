@@ -1,5 +1,5 @@
 from time import sleep
-from threading import Thread, currentThread
+from threading import Thread, current_thread
 from evdev import InputDevice, ecodes, categorize, list_devices
 
 
@@ -61,7 +61,7 @@ class Mouse:
         while not self._TERMINATION_SIGN:
             try:
                 for event in listener.read_loop():
-                    self.lastdevid = int(currentThread().name)
+                    self.lastdevid = int(current_thread().name)
                     if event.type == ecodes.EV_KEY:
                         categorized = str(categorize(event))
                         if 'BTN_LEFT' in categorized and 'down' in categorized:

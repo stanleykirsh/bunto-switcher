@@ -51,9 +51,9 @@ rpm -qa | grep -qw dbus-x11 ||
     sudo dnf -y install dbus-x11; }
 
 # Добавляем разрешение в sudoers если его еще нет.
-grep -qxF "$SUDO_USER ALL=(ALL) NOPASSWD: /usr/bin/nice" /etc/sudoers || 
+grep -qxF "$SUDO_USER ALL=(ALL) NOPASSWD: /usr/bin/nice -n -18 python /usr/share/bunto/switcher.py" /etc/sudoers || 
     { echo Добавляю разрешение в sudoers...;
-    echo "$SUDO_USER ALL=(ALL) NOPASSWD: /usr/bin/nice" >> /etc/sudoers; }
+    echo "$SUDO_USER ALL=(ALL) NOPASSWD: /usr/bin/nice -n -18 python /usr/share/bunto/switcher.py" >> /etc/sudoers; }
 
 echo Готово!
 echo
