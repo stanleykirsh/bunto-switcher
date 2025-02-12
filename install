@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo Установка bunto switcher...
+echo "Установка bunto switcher..."
 
 # Cоздаем папку приложения если еще не существует.
 # Очищаем содержимое если папка уже существует.
@@ -8,32 +8,53 @@ mkdir -p /usr/share/bunto
 rm -rf /usr/share/bunto/*
 
 # Копируем файлы приложения кроме некоторых исключений !().
-echo Копирую файлы...
+echo "Копирую файлы..."
 shopt -s extglob
 cp -R ./!(notes|utils|.vscode|todo.txt|.gif|__pycache__) /usr/share/bunto/
 
 # Добавляем приложение в обзор приложений.
-echo Добавляю приложение в список программ...
+echo "Добавляю приложение в список программ..."
 cp ./bunto.desktop /usr/share/applications/
 sudo chown $SUDO_USER: /usr/share/applications/bunto.desktop
 
 # Добавляем приложение в автозапуск.
 # Предварительно создаем директорию autostart если она отсутствует
-echo Добавляю приложение в автозапуск...
+echo "Добавляю приложение в автозапуск..."
 mkdir -p /home/$SUDO_USER/.config/autostart/
 cp ./bunto.desktop /home/$SUDO_USER/.config/autostart/
 sudo chown $SUDO_USER: /home/$SUDO_USER/.config/autostart/bunto.desktop
 
+# Добавляем разрешение в sudoers если его еще нет.
+echo "Добавляю разрешение в sudoers..."
+grep -qxF "## Exception for Bunto Switcher" /etc/sudoers ||
+    echo "## Exception for Bunto Switcher" >> /etc/sudoers
+grep -qxF "$SUDO_USER ALL=(ALL) NOPASSWD: /usr/bin/nice -n -18 python /usr/share/bunto/switcher.py" /etc/sudoers ||
+    echo "$SUDO_USER ALL=(ALL) NOPASSWD: /usr/bin/nice -n -18 python /usr/share/bunto/switcher.py" >> /etc/sudoers
+
+# Определяем тип ОС
+which which dnf >/dev/null 2>&1 || { 
+    echo "Готово!";
+    echo;
+    echo "Для работы приложения должны быть установлены пакеты:";
+    echo "gnome-shell-extension-appindicator";
+    echo "python3-evdev";
+    echo "dbus-x11";
+    echo;
+    echo "Если требуется установите их вручную.";
+    echo "Для вступления в силу изменений требуется перезагрузка."
+    echo;
+    exit 0
+    }
+
 # Устанавливаем зависимости.
-###########################
-echo Проверяю установленные зависимости...
+echo "Проверяю установленные зависимости..."
 
 # appindicator
 # sudo dnf install gnome-shell-extension-appindicator
 # gnome-extensions enable appindicatorsupport@rgcjonas.gmail.com
 # релогин или перезагрузка может потребоваться после первого шага
 rpm -qa | grep -qw gnome-shell-extension-appindicator ||
-    { echo Устанавливаю appindicator...;
+    { echo "Устанавливаю appindicator...";
     sudo dnf -y install gnome-shell-extension-appindicator; 
     gnome-extensions enable appindicatorsupport@rgcjonas.gmail.com; }
 
@@ -41,21 +62,16 @@ rpm -qa | grep -qw gnome-shell-extension-appindicator ||
 # sudo dnf makecache
 # sudo dnf install python3-evdev.x86_64
 rpm -qa | grep -qw python3-evdev ||
-    { echo Устанавливаю evdev...;
+    { echo "Устанавливаю evdev...";
     sudo dnf -y install python3-evdev; }
 
 # dbus-x11
 # sudo dnf install dbus-x11 -y
 rpm -qa | grep -qw dbus-x11 ||
-    { echo Устанавливаю dbus-x11...;
+    { echo "Устанавливаю dbus-x11...";
     sudo dnf -y install dbus-x11; }
 
-# Добавляем разрешение в sudoers если его еще нет.
-grep -qxF "$SUDO_USER ALL=(ALL) NOPASSWD: /usr/bin/nice -n -18 python /usr/share/bunto/switcher.py" /etc/sudoers || 
-    { echo Добавляю разрешение в sudoers...;
-    echo "$SUDO_USER ALL=(ALL) NOPASSWD: /usr/bin/nice -n -18 python /usr/share/bunto/switcher.py" >> /etc/sudoers; }
-
-echo Готово!
+echo "Готово!"
 echo
-echo Для вступления в силу изменений требуется перезагрузка.
+echo "Для вступления в силу изменений требуется перезагрузка."
 echo

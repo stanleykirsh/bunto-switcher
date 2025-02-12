@@ -16,6 +16,7 @@ rm -rf /home/$SUDO_USER/.config/autostart/bunto.desktop
 
 # Удаляем разрешение из sudoers.
 echo Удаляю разрешение из sudoers...
+sudo sed -i "/## Exception for Bunto Switcher/d" /etc/sudoers
 sudo sed -i "/$SUDO_USER ALL=(ALL) NOPASSWD: \/usr\/bin\/nice -n -18 python \/usr\/share\/bunto\/switcher.py/d" /etc/sudoers
 
 echo Готово!...
