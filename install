@@ -67,9 +67,9 @@ rpm -qa | grep -qw python3-evdev ||
 
 # dbus-x11
 # sudo dnf install dbus-x11 -y
-rpm -qa | grep -qw dbus-x11 ||
-    { echo "Устанавливаю dbus-x11...";
-    sudo dnf -y install dbus-x11; }
+# rpm -qa | grep -qw dbus-x11 ||
+#     { echo "Устанавливаю dbus-x11...";
+#     sudo dnf -y install dbus-x11; }
 
 echo "Готово!"
 echo

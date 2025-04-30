@@ -8,19 +8,16 @@
 # https://packages.fedoraproject.org/pkgs/libappindicator/libappindicator/
 # sudo dnf install libappindicator-gtk3
 
+import os
+import time
+import threading
+import subprocess
+from settings import VERSION
+from gi.repository import Gtk as gtk
+from gi.repository import AppIndicator3 as appindicator
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('AppIndicator3', '0.1')
-
-from gi.repository import AppIndicator3 as appindicator
-from gi.repository import Gtk as gtk
-
-from settings import VERSION
-
-import subprocess
-import threading
-import time
-import os
 
 
 APPINDICATOR_ID = 'buntoappindicator'
@@ -31,21 +28,25 @@ SWITCHER_COMMAND = f'sudo nice -n -18 python /usr/share/bunto/switcher.py'
 class SwitcherProcess:
     def __init__(self):
         self.process = None
-        self.TERMINATE = False
+        self.AWAIT_TERMINATE = False
 
     def start(self):
         """Перед запуском убеждаемся что ни один экземпляр SwitcherProcess не запущен."""
-        if (not switcher_process.TERMINATE
-            and (not switcher_process.process
-                 or switcher_process.process.poll() is not None)):
+        if not self.is_running():
             self.process = subprocess.Popen(SWITCHER_COMMAND.split())
-    
+
     def terminate(self):
-        if switcher_process.process:
-            switcher_process.TERMINATE = True
-            switcher_process.process.terminate()
-            while switcher_process.process.poll() is None:
+        if self.process:
+            self.AWAIT_TERMINATE = True
+            self.process.terminate()
+            while self.is_running():
                 time.sleep(0.1)
+            self.AWAIT_TERMINATE = False
+
+    def is_running(self):
+        if self.process and self.process.poll() is None:
+            return True
+        return False
 
 
 def show_log(source):
@@ -100,13 +101,11 @@ def main():
 
 
 def restart_switcher():
-    """Перезапустить процесс switcher."""
-    """Перед запуском убеждаемся что еще ни один экземпляр процесса не запущен."""
+    """Это watchdog.
+    Пытаемся перезапустиь процесс switcher в отдельном потоке раз в секунду.
+    Перед запуском убеждаемся что еще ни один экземпляр процесса не запущен."""
     while True:
-        if (not switcher_process.TERMINATE
-            and (not switcher_process.process
-                 or switcher_process.process.poll() is not None)):
-            switcher_process.start()
+        switcher_process.start()
         time.sleep(1)
 
 
