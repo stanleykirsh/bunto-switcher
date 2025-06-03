@@ -22,7 +22,7 @@ from gi.repository import AppIndicator3 as appindicator
 
 APPINDICATOR_ID = 'buntoappindicator'
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
-SWITCHER_COMMAND = f'sudo nice -n -18 python /usr/share/bunto/switcher.py'
+SWITCHER_COMMAND = 'sudo nice -n -18 python /usr/share/bunto/switcher.py'
 
 
 class SwitcherProcess:
@@ -44,10 +44,7 @@ class SwitcherProcess:
             self.AWAIT_TERMINATE = False
 
     def is_running(self):
-        if self.process and self.process.poll() is None:
-            return True
-        return False
-
+        return bool(self.process and self.process.poll() is None)
 
 def show_log(source):
     """Открыть лог файл."""
@@ -59,13 +56,14 @@ def show_settings(source):
     subprocess.run(['xdg-open', '/usr/share/bunto/settings.py'])
 
 
-def quit(source):
+def close(source):
     """Выход из приложения."""
     switcher_process.terminate()
     gtk.main_quit()
 
 
 def build_menu():
+    """"""
     menu = gtk.Menu()
     ####
     item_title_version = gtk.MenuItem.new_with_label(f'Версия {VERSION}')
@@ -76,16 +74,16 @@ def build_menu():
     item_action.connect('activate', show_settings)
     menu.append(item_action)
     ####
-    item_quit = gtk.MenuItem.new_with_label('Выход')
-    item_quit.connect('activate', quit)
-    menu.append(item_quit)
+    item_close = gtk.MenuItem.new_with_label('Выход')
+    item_close.connect('activate', close)
+    menu.append(item_close)
     ####
     menu.show_all()
     return menu
 
 
 def main():
-
+    """"""
     icon_path = f'{DIR_PATH}/flag-white.png'
     indicator = appindicator.Indicator.new(
         APPINDICATOR_ID, os.path.abspath(icon_path),
@@ -103,12 +101,27 @@ def main():
 def restart_switcher():
     """Это watchdog.
     Пытаемся перезапустиь процесс switcher в отдельном потоке раз в секунду.
-    Перед запуском убеждаемся что еще ни один экземпляр процесса не запущен."""
+    Перед запуском убеждаемся что еще ни один экземпляр процесса не запущен.
+    """
     while True:
         switcher_process.start()
         time.sleep(1)
 
 
+def check_running():
+    """Проверяем что приложение еще не запущено и запрещаем повторный запуск.
+    """
+    path = f'{DIR_PATH}/main.py'    
+    command = 'ps -e -o cmd= | grep bunto'
+    result = subprocess.run(command, stdout=subprocess.PIPE, shell=True, text=True)
+    result = result.stdout# .splitlines()
+
+    if result.count(path) > 1:
+        quit()
+    else:
+        return
+
 if __name__ == '__main__':
+    check_running()
     switcher_process = SwitcherProcess()
     main()

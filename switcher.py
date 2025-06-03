@@ -67,6 +67,32 @@ class Switcher():
         if prob_ru < prob_en: return 'us'
         if prob_ru == prob_en: return ''
 
+    def __get_layout_probability__(self, string: str):
+        """"""
+        LITERALS = ''' qwertyuiopasdfghjklzxcvbnmёйцукенгшщзхъфывапролджэячсмитьбю'''
+
+        string = string.lower()
+        string = ''.join([s for s in string if s in LITERALS])
+
+        # Для слов исключений вероятность языка неопределенная.
+        # Менять раскладку автоматически для них не требуется.
+        if string.strip() in settings.IGNORE_WORDS.splitlines():
+            return ''
+
+        if self.initial_layout == 'us':
+            for ng in self.ngrams_ru:
+                if ng in string:
+                    return 'ru'
+            return 'us'
+
+        if self.initial_layout == 'ru':
+            for ng in self.ngrams_en:
+                if ng in string:
+                    return 'us'
+            return 'ru'
+
+        return ''
+
     def get_layout(self):
         """"""
         get_mru_sources = f'sudo -u {self.username} gsettings get org.gnome.desktop.input-sources mru-sources'.split()
@@ -74,6 +100,16 @@ class Switcher():
         result = result.stdout.decode('utf-8')[10:12]
         self.initial_layout = result
         return result
+
+    def get_target_layout(self):
+        """"""
+        string = self.decode_buffer()
+        string = string.replace('\t', ' ')
+        string = string.replace('\r\n', ' ')
+        layout_probability = self.get_layout_probability(string)
+        if (layout_probability == 'ru' and self.initial_layout == 'us'): return 'ru'
+        if (layout_probability == 'us' and self.initial_layout == 'ru'): return 'us'
+        return self.initial_layout
 
     def kb_auto_process(self, key_code: int):
         """"""
@@ -154,16 +190,6 @@ class Switcher():
         self.delete_last_word()
         self.keyboard.send(INSERT_KEY_CODE)
         Timer(0.20, self.clipboard.restore).start()
-
-    def get_target_layout(self):
-        """"""
-        string = self.decode_buffer()
-        string = string.replace('\t', ' ')
-        string = string.replace('\r\n', ' ')
-        layout_probability = self.get_layout_probability(string)
-        if (layout_probability == 'ru' and self.initial_layout == 'us'): return 'ru'
-        if (layout_probability == 'us' and self.initial_layout == 'ru'): return 'us'
-        return self.initial_layout
 
     def upper_fix_required(self):
         """"""

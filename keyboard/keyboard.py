@@ -1,3 +1,4 @@
+import os
 import logging
 
 from time import sleep
@@ -48,12 +49,6 @@ class Keyboard:
             try:
                 _devices = self._get_devices()
 
-                # сделать больше _GETDEVICE_DELAY и убрать continue?
-                # пусть пересоздает всегда...
-                # if _devices == self.devices:
-                #    sleep(self._GETDEVICE_DELAY)
-                #    continue
-
                 # [Re]create main thread when devices was changed.
                 # Stop working threads if exist. And create new ones.
                 self._TERMINATION_SIGN = True
@@ -66,6 +61,11 @@ class Keyboard:
                 self.devthreads = []
 
                 for devid, devpath in enumerate(_devices):
+                    # If no device is found, then without this condition the whole loop will fail 
+                    # and threads for other valid devices will not be created again until the application is restarted. 
+                    # Next condition helps to avoid hangs if the keyboard was disconnected and reconnected while the computer was asleep. 
+                    if not os.path.exists(devpath):
+                        continue
                     listener = InputDevice(devpath)
                     controller = UInput.from_device(devpath)
                     thread = Thread(
