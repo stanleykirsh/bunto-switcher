@@ -168,7 +168,7 @@ class Keyboard:
             if isinstance(key, str): key_code = ecodes.ecodes[self._char_to_key(key)]
             self.controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
             self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
-        self.controller.syn()
+            self.controller.syn()
 
     def is_pressed(self, key: int | str):
         """"""        
