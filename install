@@ -73,5 +73,3 @@ rpm -qa | grep -qw python3-evdev ||
 
 echo "Готово!"
 echo
-echo "Для вступления в силу изменений требуется перезагрузка."
-echo

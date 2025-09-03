@@ -1,4 +1,4 @@
-VERSION = "15.05.25"
+VERSION = "28.08.25"
 
 # Исправлять раскладку автоматически.
 SWITCH_AUTO = True
@@ -14,7 +14,8 @@ SYS_SWITCH_KEY = ["ctrl_left", "shift_left"]
 
 # Приложения исключения
 APP_EXCEPTIONS = '''
-firewatch.exe
+firewatch
+gnome_shell
 '''
 
 # Игнорировать автопереключение

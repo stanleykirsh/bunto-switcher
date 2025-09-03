@@ -153,13 +153,14 @@ class Keyboard:
             key_code = key
             if isinstance(key, str): key_code = ecodes.ecodes[self._char_to_key(key)]
             self.controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
+            self.controller.syn()
 
         sleep(self._KEY_DELAY)
         for key in reversed(keys):
             key_code = key
             if isinstance(key, str): key_code = ecodes.ecodes[self._char_to_key(key)]
             self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
-        self.controller.syn()
+            self.controller.syn()
 
     def type(self, text: int | str | list):
         """"""
@@ -167,6 +168,7 @@ class Keyboard:
             key_code = key          
             if isinstance(key, str): key_code = ecodes.ecodes[self._char_to_key(key)]
             self.controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
+            self.controller.syn()
             self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
             self.controller.syn()
 
@@ -188,23 +190,23 @@ class Keyboard:
                 return True
         return False
 
-    def _key_to_char(self, key_name):
+    def _key_to_char(self, key_name: str):
         """"""
         for line in keymap.EV_KEYS:
             if line[0] == key_name:
                 return line[1]
 
-    def _char_to_key(self, char):
+    def _char_to_key(self, char: str):
         """"""
         for line in keymap.EV_KEYS:
-            if line[1] == char.lower() or line[2] == char:
+            if char.lower() in (line[1], line[3]):
                 return line[0]
 
-    def _char_to_code(self, char):
+    def _char_to_code(self, char: str):
         """"""
         for line in keymap.EV_KEYS:
-            if line[1] == char.lower():
-                return line[3]
+            if char.lower() in (line[1], line[3]):
+                return line[5]
 
     def grab(self):
         """"""
