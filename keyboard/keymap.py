@@ -64,7 +64,7 @@ EV_KEYS = [
 ('KEY_RIGHTSHIFT',  'shift_right',  'shift_right',  'shift_right',  'shift_right',  54), 
 ('KEY_KPASTERISK',  '*',            '*',            '*',            '*',            55), 
 ('KEY_LEFTALT',     'alt_left',     'alt_left',     'alt_left',     'alt_left',     56), 
-('KEY_SPACE',       'space',        'space',        'space',        'space',        57), 
+('KEY_SPACE',       ' ',            ' ',            ' ',            ' ',            57), 
 ('KEY_CAPSLOCK',    'caps_lock',    'caps_lock',    'caps_lock',    'caps_lock',    58), 
 ('KEY_F1',          'f1',           'f1',           'f1',           'f1',           59), 
 ('KEY_F2',          'f2',           'f2',           'f2',           'f2',           60), 
