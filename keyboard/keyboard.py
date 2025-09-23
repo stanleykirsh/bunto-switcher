@@ -148,29 +148,12 @@ class Keyboard:
 
     def send(self, keys: list[int] | list[str]):
         """"""
-        # keys = keys.split('+')
         for key in keys:
             key_code = key
             if isinstance(key, str): key_code = ecodes.ecodes[self._char_to_key(key)]
             self.controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
-            self.controller.syn()
-
-        sleep(self._KEY_DELAY)
-        for key in reversed(keys):
-            key_code = key
-            if isinstance(key, str): key_code = ecodes.ecodes[self._char_to_key(key)]
-            self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
-            self.controller.syn()
-
-    def type(self, text: int | str | list):
-        """"""
-        for key in text:
-            key_code = key          
-            if isinstance(key, str): key_code = ecodes.ecodes[self._char_to_key(key)]
-            self.controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
-            self.controller.syn()
-            self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
-            self.controller.syn()
+            self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up     
+        self.controller.syn()
 
     def is_pressed(self, key: int | str):
         """"""        

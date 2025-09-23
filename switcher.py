@@ -3,28 +3,28 @@ gi.require_version('Gtk', '3.0')
 
 from mouse.mouse import Mouse
 from keyboard.keyboard import Keyboard
-from clipboard.clipboard import Clipboard
+# from clipboard.clipboard import Clipboard
 from gi.repository import Gtk as gtk
-from settings import SYS_SWITCH_KEY
-from threading import Timer
+# from settings import SYS_SWITCH_KEY
+# from threading import Timer
 from charmap import (
     EOW_KEY_CODES,
     ASWITCH_KEY_CODES,
     MSWITCH_KEY_CODES,
-    INSERT_KEY_CODE,
+    # INSERT_KEY_CODE,
     KEY_MAP)
 
 import os
 import settings
 import subprocess
-          
+
 
 class Switcher():
     """"""
 
     def __init__(self):
         """"""
-        self.clipboard = Clipboard()
+        # self.clipboard = Clipboard()
         self.keyboard = Keyboard()
         self.mouse = Mouse()
 
@@ -37,7 +37,11 @@ class Switcher():
         self.ngrams_en = set(self.load_ngrams((f'{dir_path}/data/ngrams-en.txt',)))
 
         self.username = os.environ['SUDO_USER']
+        self.useruid = self.get_user_uid(self.username)
         self.initial_layout = self.get_layout()
+        # print("initial_layout", self.initial_layout)
+
+        self.PRESSED = False
 
     def load_ngrams(self, filenames):
         """"""
@@ -77,13 +81,58 @@ class Switcher():
 
     def get_target_layout(self):
         """"""
+        # print('get_target_layout', self.buffer, self.initial_layout)
         string = self.decode_buffer()
         string = string.replace('\t', ' ')
         string = string.replace('\r\n', ' ')
-        layout_probability = self.get_layout_probability(string)
-        if (layout_probability == 'ru' and self.initial_layout == 'us'): return 'ru'
-        if (layout_probability == 'us' and self.initial_layout == 'ru'): return 'us'
-        return self.initial_layout
+        return self.get_layout_probability(string)
+
+    def get_user_uid(self, user):
+        """"""
+        # Получаем информацию о пользователе
+        result = subprocess.run(
+            ['id', '-u', user],
+            check=True,
+            text=True,
+            capture_output=True
+        )
+        return result.stdout.strip()
+
+
+    def set_layout(self, layout: str):
+        """"""        
+        if layout == 'ru':
+            str_0 = "[('xkb','ru')]"
+            str_1 = "[('xkb','ru'),('xkb','us')]"
+
+        if layout == 'us':
+            str_0 = "[('xkb','us')]"
+            str_1 = "[('xkb','us'),('xkb','ru')]"
+
+        # Формируем путь к D-Bus сессии        
+        dbus_address = f"unix:path=/run/user/{self.useruid}/bus"
+
+        # Выполняем команды с указанием D-Bus адреса
+        # Объединяем все команды в одну строку
+        commands = (
+            f"""sudo -u {self.username} """
+            f"""env DBUS_SESSION_BUS_ADDRESS={dbus_address} """
+            f"""gsettings set org.gnome.desktop.input-sources sources "{str_0}"; """
+            
+            f"""sudo -u {self.username} """
+            f"""env DBUS_SESSION_BUS_ADDRESS={dbus_address} """
+            f"""gsettings set org.gnome.desktop.input-sources mru-sources "{str_1}"; """
+            
+            f"""sudo -u {self.username} """
+            f"""env DBUS_SESSION_BUS_ADDRESS={dbus_address} """
+            f"""gsettings set org.gnome.desktop.input-sources sources "{str_1}\"""")
+
+        # Выполняем объединённые команды
+        subprocess.run(
+            ["bash", "-c", commands],
+            # check=True,
+            shell=False
+        )
 
     def kb_auto_process(self, key_code: int):
         """"""
@@ -94,24 +143,23 @@ class Switcher():
             return
 
         target_layout = self.get_target_layout()
-        string = self.decode_buffer(target_layout=target_layout)
-
+        
         # не исправляем если раскладка та же
         if target_layout == self.initial_layout:
-            return        
+            return
 
         # не исправляем аббревиатуры капсом
-        if string.isupper():
-            return        
-
-        self.keyboard.release(key_code)
-        self.clipboard.save()
-        self.clipboard.set_text(string)
+        if all(code[2:4] in ('00', '11') for code in self.buffer):
+            return
+        
+        self.initial_layout = target_layout        
+        self.set_layout(target_layout)
         self.delete_last_word()
-        self.keyboard.send(INSERT_KEY_CODE)
-        Timer(0.10, self.keyboard.send, kwargs={'keys': SYS_SWITCH_KEY}).start()
-        Timer(0.20, self.clipboard.restore).start()
-        self.initial_layout = target_layout
+        self.type_buffer()
+
+        # корректировка состояния если нажатая клавиша еще не отжата
+        if self.keyboard.is_pressed(key_code):
+            self.PRESSED = True
 
     def kb_manual_process(self, key_code: int):
         """"""
@@ -120,19 +168,14 @@ class Switcher():
             or key_code not in MSWITCH_KEY_CODES
         ):
             return
-        
+
         if self.initial_layout == 'ru': target_layout='us'
         if self.initial_layout == 'us': target_layout='ru'
-        string = self.decode_buffer(target_layout=target_layout)
 
-        self.keyboard.release(key_code)
-        self.clipboard.save()
-        self.clipboard.set_text(string)
-        self.delete_last_word()
-        self.keyboard.send(INSERT_KEY_CODE)
-        Timer(0.10, self.keyboard.send, kwargs={'keys': SYS_SWITCH_KEY}).start()
-        Timer(0.20, self.clipboard.restore).start()
         self.initial_layout = target_layout
+        self.set_layout(target_layout)
+        self.delete_last_word()
+        self.type_buffer()
 
     def caps_auto_process(self, key_code: int):
         """"""
@@ -146,24 +189,17 @@ class Switcher():
         if not self.upper_fix_required():
             return
         
-        for index, encoded_key in enumerate(self.buffer):
-            encoded_key = list(encoded_key)
-            encoded_key[3] = '0' if index != 0 else '1'
-            encoded_key[4] = '0'
-            self.buffer[index] = ''.join(encoded_key)
+        # заменяем в каждом элементе буфера (кроме первого) признаки капса на нижний регистр
+        for i in range(1, len(self.buffer)):
+            self.buffer[i] = self.buffer[i][:3] + '00'
 
-        target_layout = self.get_target_layout()
-        if target_layout != self.initial_layout:
+        # если требуется конвертация раскладки буфера, то выходим из процедуры
+        # конвертация раскладки буфера произойдет в kb_auto_process, а раскладку буфера мы уже поменяли
+        if self.get_target_layout() != self.initial_layout:
             return
-        
-        string = self.decode_buffer(target_layout)
 
-        self.keyboard.release(key_code)        
-        self.clipboard.save()
-        self.clipboard.set_text(string)
         self.delete_last_word()
-        self.keyboard.send(INSERT_KEY_CODE)
-        Timer(0.20, self.clipboard.restore).start()
+        self.type_buffer()
 
     def upper_fix_required(self):
         """"""
@@ -183,7 +219,17 @@ class Switcher():
     def delete_last_word(self):
         """"""
         # backspace = 14
-        self.keyboard.type([14]*len(self.buffer))
+        self.keyboard.send([14]*len(self.buffer))
+
+    def type_buffer(self):
+        """"""
+        for key in self.buffer:
+            if int(key[3]):
+                self.keyboard.press(42)
+                self.keyboard.send([int(key[:3])])
+                self.keyboard.release(42)
+            else:
+                self.keyboard.send([int(key[:3])])
 
     def encode_key(self, key_code):
         """"""
@@ -205,9 +251,9 @@ class Switcher():
         for key in self.buffer:
 
             key_code = int(key[:3])
-            capitalize = abs(int(key[3])-int(key[4]))
+            is_capitalized = bool(int(key[3]) != int(key[4]))
 
-            _target_layout = target_layout + '_' if capitalize else target_layout
+            _target_layout = target_layout + '_' if is_capitalized else target_layout
 
             if key_code in KEY_MAP:
                 char = KEY_MAP[key_code][_target_layout]
@@ -266,10 +312,10 @@ class Switcher():
 
     def on_key_pressed(self, event):
         """"""
-        if event.type == 'down':            
-            key_char = str(event.key_char)
-            key_code = int(event.key_code)
-            
+        key_char = str(event.key_char)
+        key_code = int(event.key_code)
+        
+        if event.type == 'down':           
             self.update_buffer(key_code)
 
             if settings.SWITCH_TWOCAPS:                
@@ -278,6 +324,13 @@ class Switcher():
                 self.kb_manual_process(key_code)
             if settings.SWITCH_AUTO:
                 self.kb_auto_process(key_code)
+
+        if event.type == 'up':
+            # корректировка состояния если нажатая клавиша еще не отжата
+            if self.PRESSED:
+                self.PRESSED = False
+                self.keyboard.send([key_code])        
+            # обновляем текущую раскладку при ручном переключении
             if key_char in (settings.SYS_SWITCH_KEY):
                 self.get_layout()
 
