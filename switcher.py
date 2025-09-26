@@ -3,13 +3,14 @@ gi.require_version('Gtk', '3.0')
 
 from mouse.mouse import Mouse
 from keyboard.keyboard import Keyboard
-from threading import Timer
 from keyboard.keymap import (EV_KEYS, VIS_KEYS)
 from gi.repository import Gtk as gtk
+from threading import Timer
 
 import os
 import settings
 import subprocess
+import time
 
 
 class Switcher():
@@ -29,7 +30,7 @@ class Switcher():
         self.ngrams_en = set(self.load_ngrams((f'{dir_path}/data/ngrams-en.txt',)))
 
         self.username = os.environ['SUDO_USER']
-        self.useruid = self.get_user_uid(self.username)
+        self.useruid = os.environ['SUDO_UID']
         
         self.initial_layout = self.get_layout()
         self.STILL_PRESSED = False
@@ -73,17 +74,6 @@ class Switcher():
         if (layout == 'us' and self.initial_layout == 'ru'): return 'us'
         return self.initial_layout
 
-    def get_user_uid(self, user):
-        """"""
-        # Получаем информацию о пользователе
-        result = subprocess.run(
-            ['id', '-u', user],
-            check=True,
-            text=True,
-            capture_output=True
-        )
-        return result.stdout.strip()
-
     def set_layout(self, layout: str):
         """"""
         if layout == 'ru':
@@ -94,7 +84,7 @@ class Switcher():
             str_0 = "[('xkb','us')]"
             str_1 = "[('xkb','us'),('xkb','ru')]"
 
-        # Формируем путь к D-Bus сессии        
+        # Формируем путь к D-Bus сессии
         dbus_address = f"unix:path=/run/user/{self.useruid}/bus"
 
         # Выполняем команды с указанием D-Bus адреса
@@ -108,16 +98,15 @@ class Switcher():
             f"""sudo -u {self.username} """
             f"""env DBUS_SESSION_BUS_ADDRESS={dbus_address} """
             f"""gsettings set org.gnome.desktop.input-sources mru-sources "{str_1}"; """
-            
+
             f"""sudo -u {self.username} """
             f"""env DBUS_SESSION_BUS_ADDRESS={dbus_address} """
             f"""gsettings set org.gnome.desktop.input-sources sources "{str_1}\"""")
 
         # выполняем объединённые команды синхронно
         subprocess.run(
-            ["bash", "-c", commands_0],
-            shell=False
-        )
+            ["bash", "-c", commands_0], 
+            shell=False)
 
         # выполняем объединённые команды асинхронно
         Timer(0.2, subprocess.run, kwargs={
@@ -134,20 +123,28 @@ class Switcher():
 
         target_layout = self.get_target_layout()
         
-        # не исправляем если раскладка та же
+        # не исправляем если целевая раскладка та же
         if target_layout == self.initial_layout:
             return
 
         # не исправляем аббревиатуры капсом
         if all(code[2:4] in ('00', '11') for code in self.buffer):
             return
-        
+
+        # и без этого работает, но лучше отжать для надежности
+        for key in self.keyboard.active_keys():
+            self.keyboard.release(key)
+
         self.initial_layout = target_layout
         self.set_layout(target_layout)
+        
+        # ждем чтобы UI наверняка успел отрисовать последний символ
+        time.sleep(self.keyboard.kbdinfo().repeat.repeat / 670)
+
         self.delete_last_word()
         self.type_buffer()
 
-        # корректировка состояния если нажатая клавиша еще не отжата
+        # взводим корректировку состояния если последняя нажатая клавиша еще не отжата
         if self.keyboard.is_pressed(key_code):
             self.STILL_PRESSED = True
 
@@ -162,12 +159,20 @@ class Switcher():
         if self.initial_layout == 'ru': target_layout='us'
         if self.initial_layout == 'us': target_layout='ru'
 
+        # и без этого работает, но лучше отжать для надежности
+        for key in self.keyboard.active_keys():
+            self.keyboard.release(key)
+
         self.initial_layout = target_layout
         self.set_layout(target_layout)
+        
+        # ждем чтобы UI наверняка успел отрисовать последний символ
+        # time.sleep(self.keyboard.kbdinfo().repeat.repeat / 670)
+        
         self.delete_last_word()
         self.type_buffer()
 
-        # корректировка состояния если нажатая клавиша еще не отжата
+        # взводим корректировку состояния если последняя нажатая клавиша еще не отжата
         if self.keyboard.is_pressed(key_code):
             self.STILL_PRESSED = True
 
@@ -192,10 +197,17 @@ class Switcher():
         if self.get_target_layout() != self.initial_layout:
             return
 
+        # и без этого работает, но лучше отжать для надежности
+        for key in self.keyboard.active_keys():
+            self.keyboard.release(key)
+
+        # ждем чтобы UI наверняка успел отрисовать последний символ
+        # time.sleep(self.keyboard.kbdinfo().repeat.repeat / 670)
+        
         self.delete_last_word()
         self.type_buffer()
 
-        # корректировка состояния если нажатая клавиша еще не отжата
+        # взводим корректировку состояния если последняя нажатая клавиша еще не отжата
         if self.keyboard.is_pressed(key_code):
             self.STILL_PRESSED = True
 
@@ -205,12 +217,12 @@ class Switcher():
         # ИСправление
         if (len(string) >= 2
             and string[0:2].isupper()
-            and not string.isupper()):
+                and not string.isupper()):
             return True
         # исПРАВЛЕНИЕ
         if (len(string) >= 2
             and string[0:2].islower()
-            and not string.islower()):
+                and not string.islower()):
             return True
         return False
 
@@ -222,7 +234,7 @@ class Switcher():
     def type_buffer(self):
         """"""
         for key in self.buffer:
-            if int(key[3]) != int(key[4]): # капс
+            if int(key[3]) != int(key[4]):  # капс
                 self.keyboard.press(42)
                 self.keyboard.send([int(key[:3])])
                 self.keyboard.release(42)
@@ -232,7 +244,7 @@ class Switcher():
     def encode_key(self, key_code):
         """"""
         # shift_left = 42, shift_right = 54
-        encoded = list(f"{key_code:03d}00")        
+        encoded = list(f"{key_code:03d}00")
         encoded[3] = '1' if self.keyboard.is_pressed(42) or self.keyboard.is_pressed(54) else '0'
         encoded[4] = '1' if self.keyboard.is_caps_locked() else '0'        
         return ''.join(encoded)
@@ -243,8 +255,8 @@ class Switcher():
         for v in self.buffer:
             for k in EV_KEYS:
                 if int(v[:3]) == k[5]:
-                    if v[3] != v[4]: # капс
-                        string += k[2] if layout == 'us' else k[4]                        
+                    if v[3] != v[4]:  # капс
+                        string += k[2] if layout == 'us' else k[4]
                     else:
                         string += k[1] if layout == 'us' else k[3]
                     continue
@@ -254,12 +266,12 @@ class Switcher():
         """"""
         # Не многоязыковая клавиша или не клавиша переключения
         if (
-                key_code not in VIS_KEYS
-                and key_code not in settings.ASWITCH_KEY_CODES
-                and key_code not in settings.MSWITCH_KEY_CODES
-                and key_code not in (29, 97, 42, 54, 57, 58)
-                # ctrl_left, ctrl_right, shift_left, shift_right, space, caps_lock
-            ):
+            key_code not in VIS_KEYS
+            and key_code not in settings.ASWITCH_KEY_CODES
+            and key_code not in settings.MSWITCH_KEY_CODES
+            and key_code not in (29, 97, 42, 54, 57, 58)
+            # ctrl_left, ctrl_right, shift_left, shift_right, space, caps_lock
+        ):
             self.buffer.clear()
             return
 
@@ -303,11 +315,11 @@ class Switcher():
         """"""
         key_char = str(event.key_char)
         key_code = int(event.key_code)
-        
-        if event.type == 'down':           
+
+        if event.type == 'down':
             self.update_buffer(key_code)
 
-            if settings.SWITCH_TWOCAPS:                
+            if settings.SWITCH_TWOCAPS:
                 self.caps_auto_process(key_code)
             if settings.SWITCH_MANUAL:
                 self.kb_manual_process(key_code)
@@ -318,7 +330,7 @@ class Switcher():
             # корректировка состояния если нажатая клавиша еще не отжата
             if self.STILL_PRESSED:
                 self.STILL_PRESSED = False
-                self.keyboard.send([key_code])        
+                self.keyboard.send([key_code])
             # обновляем текущую раскладку при ручном переключении
             if key_char in (settings.SYS_SWITCH_KEY):
                 self.initial_layout = self.get_layout()

@@ -191,15 +191,25 @@ class Keyboard:
             if char.lower() in (line[1], line[3]):
                 return line[5]
 
+    def active_keys(self):
+        """"""
+        listener: InputDevice = self.listeners[self.lastdevid]
+        return listener.active_keys(verbose=False)
+
+    def kbdinfo(self):
+        """"""
+        listener: InputDevice = self.listeners[self.lastdevid]
+        return listener
+
     def grab(self):
         """"""
-        listener = self.listeners[self.lastdevid]
+        listener: InputDevice = self.listeners[self.lastdevid]
         listener.grab()
         pass
 
     def ungrab(self):
         """"""
-        listener = self.listeners[self.lastdevid]
+        listener: InputDevice = self.listeners[self.lastdevid]
         listener.ungrab()
         pass
 
