@@ -46,9 +46,10 @@ class Switcher():
 
     def get_layout_probability(self, string: str):
         """"""
-        LITERALS = 'qwertyuiopasdfghjklzxcvbnmёйцукенгшщзхъфывапролджэячсмитьбю'
+        LITERALS = ' qwertyuiopasdfghjklzxcvbnmёйцукенгшщзхъфывапролджэячсмитьбю'
         string = ''.join(filter(LITERALS.__contains__, string.lower()))
 
+        print("get_layout_probability", f"__{string}__")
         # Для слов исключений вероятность языка неопределенная.
         # Менять раскладку автоматически для них не требуется.
         if string.strip() in settings.IGNORE_WORDS.splitlines():
@@ -59,7 +60,6 @@ class Switcher():
 
         return 'ru' if prob_ru > prob_en else 'us' if prob_ru < prob_en else ''
 
-
     def get_layout(self):
         """"""
         commands = f'sudo -u {self.username} gsettings get org.gnome.desktop.input-sources mru-sources'.split()
@@ -67,11 +67,12 @@ class Switcher():
 
     def get_target_layout(self):
         """"""
+        # если не удалось однозначно определить целевой язык то вернет текущее значение        
         string = self.decode_buffer('us')
         string = string.replace('\t', ' ').replace('\r\n', ' ')
         layout = self.get_layout_probability(string)
         if (layout == 'ru' and self.initial_layout == 'us'): return 'ru'
-        if (layout == 'us' and self.initial_layout == 'ru'): return 'us'
+        if (layout == 'us' and self.initial_layout == 'ru'): return 'us'        
         return self.initial_layout
 
     def set_layout(self, layout: str):
@@ -115,6 +116,8 @@ class Switcher():
 
     def kb_auto_process(self, key_code: int):
         """"""
+        print(self.buffer)
+        
         if (
             not self.buffer
             or key_code not in settings.ASWITCH_KEY_CODES
@@ -139,7 +142,7 @@ class Switcher():
         self.set_layout(target_layout)
         
         # ждем чтобы UI наверняка успел отрисовать последний символ
-        time.sleep(self.keyboard.kbdinfo().repeat.repeat / 670)
+        time.sleep(self.keyboard.kbdinfo().repeat.repeat / 600)
 
         self.delete_last_word()
         self.type_buffer()
@@ -165,9 +168,6 @@ class Switcher():
 
         self.initial_layout = target_layout
         self.set_layout(target_layout)
-        
-        # ждем чтобы UI наверняка успел отрисовать последний символ
-        # time.sleep(self.keyboard.kbdinfo().repeat.repeat / 670)
         
         self.delete_last_word()
         self.type_buffer()
@@ -202,7 +202,7 @@ class Switcher():
             self.keyboard.release(key)
 
         # ждем чтобы UI наверняка успел отрисовать последний символ
-        # time.sleep(self.keyboard.kbdinfo().repeat.repeat / 670)
+        time.sleep(self.keyboard.kbdinfo().repeat.repeat / 600)
         
         self.delete_last_word()
         self.type_buffer()
@@ -288,7 +288,9 @@ class Switcher():
             and int(self.buffer[-1][:3]) in settings.EOW_KEY_CODES
             and (key_code in VIS_KEYS or key_code in settings.EOW_KEY_CODES)
         ):
+            # prev_key = self.buffer[-1]
             self.buffer.clear()
+            # self.buffer.append(prev_key)
 
         # Многоязыковая клавиша
         if key_code in VIS_KEYS:
