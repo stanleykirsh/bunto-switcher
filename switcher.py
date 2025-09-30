@@ -48,8 +48,15 @@ class Switcher():
         """"""
         LITERALS = ' qwertyuiopasdfghjklzxcvbnmёйцукенгшщзхъфывапролджэячсмитьбю'
         string = ''.join(filter(LITERALS.__contains__, string.lower()))
+        
+        # если вначале признак новой строки, то добавляем его
+        # дальше он не нужен поэтому удаляем из буффера
+        if self.buffer[0] == "00000":
+            string = ' ' + string
+            self.buffer = self.buffer[1:]
 
-        print("get_layout_probability", f"__{string}__")
+        print('get_target_layout=', f'__{string}__')
+
         # Для слов исключений вероятность языка неопределенная.
         # Менять раскладку автоматически для них не требуется.
         if string.strip() in settings.IGNORE_WORDS.splitlines():
@@ -67,9 +74,10 @@ class Switcher():
 
     def get_target_layout(self):
         """"""
-        # если не удалось однозначно определить целевой язык то вернет текущее значение        
+        # если не удалось однозначно определить целевой язык то вернет текущее значение  
         string = self.decode_buffer('us')
-        string = string.replace('\t', ' ').replace('\r\n', ' ')
+        string = string.replace('\t', ' ')
+        string = string.replace('\r\n', ' ')
         layout = self.get_layout_probability(string)
         if (layout == 'ru' and self.initial_layout == 'us'): return 'ru'
         if (layout == 'us' and self.initial_layout == 'ru'): return 'us'        
@@ -142,7 +150,7 @@ class Switcher():
         self.set_layout(target_layout)
         
         # ждем чтобы UI наверняка успел отрисовать последний символ
-        time.sleep(self.keyboard.kbdinfo().repeat.repeat / 600)
+        time.sleep(self.keyboard.kbdinfo().repeat.repeat / 500)
 
         self.delete_last_word()
         self.type_buffer()
@@ -193,7 +201,7 @@ class Switcher():
             self.buffer[i] = self.buffer[i][:3] + '00'
 
         # если требуется конвертация раскладки буфера, то выходим из процедуры
-        # конвертация раскладки буфера произойдет в kb_auto_process, а раскладку буфера мы уже поменяли
+        # конвертация раскладки буфера произойдет в kb_auto_process, а капсы мы уже исправили
         if self.get_target_layout() != self.initial_layout:
             return
 
@@ -202,7 +210,7 @@ class Switcher():
             self.keyboard.release(key)
 
         # ждем чтобы UI наверняка успел отрисовать последний символ
-        time.sleep(self.keyboard.kbdinfo().repeat.repeat / 600)
+        time.sleep(self.keyboard.kbdinfo().repeat.repeat / 200)
         
         self.delete_last_word()
         self.type_buffer()
@@ -264,7 +272,18 @@ class Switcher():
 
     def update_buffer(self, key_code):
         """"""
-        # Не многоязыковая клавиша или не клавиша переключения
+        # backspace = 14
+        if key_code == 14:
+            if self.buffer:
+                print('self.buffer.pop')
+                self.buffer.pop()
+            # если удалили всю строку в буффере, до добавляем метку начала строки
+            # чтобы по нграммам правильно определился язык нового слова
+            if not self.buffer:
+                self.buffer = ["00000"]
+            return
+
+        # не многоязыковая клавиша или не клавиша переключения
         if (
             key_code not in VIS_KEYS
             and key_code not in settings.ASWITCH_KEY_CODES
@@ -272,13 +291,15 @@ class Switcher():
             and key_code not in (29, 97, 42, 54, 57, 58)
             # ctrl_left, ctrl_right, shift_left, shift_right, space, caps_lock
         ):
-            self.buffer.clear()
+            # до добавляем метку начала строки
+            self.buffer = ["00000"]
             return
 
         # Ctrl + любая клавиша чистят буфер и не добавляет эту букву в буфер.
         # ctrl_left = 29, ctrl_right = 97
         if self.keyboard.is_pressed(29) or self.keyboard.is_pressed(97):
-            self.buffer.clear()
+            # до добавляем метку начала строки
+            self.buffer = ["00000"]
             return
 
         # Если приходит первый значимый символ после конца слова, то очищаем буфер.
@@ -288,9 +309,10 @@ class Switcher():
             and int(self.buffer[-1][:3]) in settings.EOW_KEY_CODES
             and (key_code in VIS_KEYS or key_code in settings.EOW_KEY_CODES)
         ):
-            # prev_key = self.buffer[-1]
-            self.buffer.clear()
-            # self.buffer.append(prev_key)
+            if int(self.buffer[-1][:3]) in settings.EOW_KEY_CODES:
+                self.buffer = [self.buffer[-1]]
+            else:
+                self.buffer.clear()
 
         # Многоязыковая клавиша
         if key_code in VIS_KEYS:
@@ -302,16 +324,10 @@ class Switcher():
             self.buffer.append(self.encode_key(key_code))
             return
 
-        # backspace = 14
-        if key_code == 14:
-            if self.buffer:
-                self.buffer.pop()
-            return
-
     def on_mouse_click(self, event):
         """"""
         self.initial_layout = self.get_layout()
-        self.buffer.clear()
+        self.buffer = ["00000"]
 
     def is_pressed(self, event):
         """"""
