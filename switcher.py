@@ -21,7 +21,7 @@ class Switcher():
         self.keyboard = Keyboard()
         self.mouse = Mouse()
 
-        self.buffer = []
+        self.buffer = ["000000"]
         self.ngrams_ru = []
         self.ngrams_en = []
 
@@ -34,6 +34,7 @@ class Switcher():
         
         self.initial_layout = self.get_layout()
         self.STILL_PRESSED = False
+        self.BUFFER_LENGTH = 32
 
     def load_ngrams(self, filenames):
         """"""
@@ -48,14 +49,6 @@ class Switcher():
         """"""
         LITERALS = ' qwertyuiopasdfghjklzxcvbnmёйцукенгшщзхъфывапролджэячсмитьбю'
         string = ''.join(filter(LITERALS.__contains__, string.lower()))
-        
-        # если вначале признак новой строки, то добавляем его
-        # дальше он не нужен поэтому удаляем из буффера
-        if self.buffer[0] == "00000":
-            string = ' ' + string
-            self.buffer = self.buffer[1:]
-
-        print('get_target_layout=', f'__{string}__')
 
         # Для слов исключений вероятность языка неопределенная.
         # Менять раскладку автоматически для них не требуется.
@@ -72,10 +65,10 @@ class Switcher():
         commands = f'sudo -u {self.username} gsettings get org.gnome.desktop.input-sources mru-sources'.split()
         return subprocess.run(commands, stdout=subprocess.PIPE).stdout.decode('utf-8')[10:12]
 
-    def get_target_layout(self):
+    def get_target_layout(self, buffer):
         """"""
         # если не удалось однозначно определить целевой язык то вернет текущее значение  
-        string = self.decode_buffer('us')
+        string = self.decode_buffer(buffer, 'us')
         string = string.replace('\t', ' ')
         string = string.replace('\r\n', ' ')
         layout = self.get_layout_probability(string)
@@ -114,46 +107,49 @@ class Switcher():
 
         # выполняем объединённые команды синхронно
         subprocess.run(
-            ["bash", "-c", commands_0], 
+            ["bash", "-c", commands_0],
             shell=False)
 
         # выполняем объединённые команды асинхронно
-        Timer(0.2, subprocess.run, kwargs={
+        Timer(0.25, subprocess.run, kwargs={
             'args': ["bash", "-c", commands_1],
             'shell': False}).start()
 
     def kb_auto_process(self, key_code: int):
         """"""
-        print(self.buffer)
+        # get_last_word возвращает: BRAKEсловоEOW, EOWсловоEOW, BRAKEслово, EOWслово
+        buffer = self.get_last_word()
         
-        if (
-            not self.buffer
-            or key_code not in settings.ASWITCH_KEY_CODES
-        ):
+        if (not buffer
+            or key_code not in settings.ASWITCH_KEY_CODES):
             return
 
-        target_layout = self.get_target_layout()
+        # для определения языка набранного текста заменяем брейки на пробелы
+        # чтобы правильно обрабатывались нграммы начала слов (" ns" = " ты")
+        buf = ["05700" if int(x[:3]) in settings.EOW_KEY_CODES else x for x in buffer]
+        target_layout = self.get_target_layout(buf)
+        
+        buffer = [x for x in buffer if int(x[:3]) not in settings.EOW_KEY_CODES]
+        buffer.append(self.encode_key(key_code))
         
         # не исправляем если целевая раскладка та же
         if target_layout == self.initial_layout:
             return
 
         # не исправляем аббревиатуры капсом
-        if all(code[2:4] in ('00', '11') for code in self.buffer):
+        if all(code[2:4] in ('00', '11') for code in buffer):
             return
-
-        # и без этого работает, но лучше отжать для надежности
-        for key in self.keyboard.active_keys():
-            self.keyboard.release(key)
 
         self.initial_layout = target_layout
         self.set_layout(target_layout)
         
-        # ждем чтобы UI наверняка успел отрисовать последний символ
-        time.sleep(self.keyboard.kbdinfo().repeat.repeat / 500)
+        # ждем чтобы GUI успел отрисовать последний символ
+        time.sleep(0.025)
 
-        self.delete_last_word()
-        self.type_buffer()
+        # не печатаем брейки
+        buffer = [x for x in buffer if x not in ("00000")]
+        self.keyboard.send([14]*len(buffer)) # backspace = 14
+        self.type_buffer(buffer)
 
         # взводим корректировку состояния если последняя нажатая клавиша еще не отжата
         if self.keyboard.is_pressed(key_code):
@@ -161,24 +157,23 @@ class Switcher():
 
     def kb_manual_process(self, key_code: int):
         """"""
-        if (
-            not self.buffer
-            or key_code not in settings.MSWITCH_KEY_CODES
-        ):
+        # get_last_word возвращает: BRAKEсловоEOW, EOWсловоEOW, BRAKEслово, EOWслово
+        buffer = self.get_last_word()
+
+        if (not buffer
+            or key_code not in settings.MSWITCH_KEY_CODES):
             return
 
         if self.initial_layout == 'ru': target_layout='us'
         if self.initial_layout == 'us': target_layout='ru'
 
-        # и без этого работает, но лучше отжать для надежности
-        for key in self.keyboard.active_keys():
-            self.keyboard.release(key)
-
         self.initial_layout = target_layout
         self.set_layout(target_layout)
         
-        self.delete_last_word()
-        self.type_buffer()
+        # не печатаем брейки
+        buffer = [x for x in buffer if x not in ("00000")]
+        self.keyboard.send([14]*len(buffer)) # backspace = 14
+        self.type_buffer(buffer)
 
         # взводим корректировку состояния если последняя нажатая клавиша еще не отжата
         if self.keyboard.is_pressed(key_code):
@@ -186,42 +181,47 @@ class Switcher():
 
     def caps_auto_process(self, key_code: int):
         """"""
-        if (
-            not self.buffer
-            or key_code not in settings.MSWITCH_KEY_CODES + settings.ASWITCH_KEY_CODES
-        ):
+        # get_last_word возвращает: BRAKEсловоEOW, EOWсловоEOW, BRAKEслово, EOWслово
+        buffer = self.get_last_word()        
+
+        if (not buffer
+            or key_code not in settings.MSWITCH_KEY_CODES + settings.ASWITCH_KEY_CODES):
             return
 
-        # если в буфере первые два символа не капсом,то выходим
-        if not self.upper_fix_required():
+        # если в буфере первые два символа не капсом,то выходим ...
+        # для этого преобразуем [BRAKEсловоEOW, EOWсловоEOW, BRAKEслово, EOWслово] => слово
+        buf = [x for x in buffer if int(x[:3]) not in settings.EOW_KEY_CODES]
+        if not self.upper_fix_required(buf):
             return
-        
-        # заменяем в каждом элементе буфера (кроме первого) признаки капса на нижний регистр
-        for i in range(1, len(self.buffer)):
-            self.buffer[i] = self.buffer[i][:3] + '00'
+
+        # ... иначе заменяем в каждом элементе буфера, кроме первого, признаки капса на нижний регистр
+        buffer = [x[:3] + '00' for x in buffer]
+        buffer[1] = buffer[1][:3] + '10'
+        self.buffer[-len(buffer):] = buffer
+
+        # для определения языка набранного текста заменяем брейк на пробел
+        # чтобы правильно обрабатывались нграммы начала слов (" ns" = " ты")
+        buf = ["05700" if int(x[:3]) == settings.EOW_KEY_CODES else x for x in buffer]
+        target_layout = self.get_target_layout(buf)
 
         # если требуется конвертация раскладки буфера, то выходим из процедуры
         # конвертация раскладки буфера произойдет в kb_auto_process, а капсы мы уже исправили
-        if self.get_target_layout() != self.initial_layout:
+        if target_layout != self.initial_layout:
             return
 
-        # и без этого работает, но лучше отжать для надежности
-        for key in self.keyboard.active_keys():
-            self.keyboard.release(key)
-
-        # ждем чтобы UI наверняка успел отрисовать последний символ
-        time.sleep(self.keyboard.kbdinfo().repeat.repeat / 200)
+        # ждем чтобы GUI успел отрисовать последний символ
+        time.sleep(0.025)
         
-        self.delete_last_word()
-        self.type_buffer()
+        self.keyboard.send([14]*len(buffer)) # backspace = 14
+        self.type_buffer(buffer)
 
         # взводим корректировку состояния если последняя нажатая клавиша еще не отжата
         if self.keyboard.is_pressed(key_code):
             self.STILL_PRESSED = True
 
-    def upper_fix_required(self):
+    def upper_fix_required(self, buffer):
         """"""
-        string = self.decode_buffer('us')
+        string = self.decode_buffer(buffer, 'us')
         # ИСправление
         if (len(string) >= 2
             and string[0:2].isupper()
@@ -234,14 +234,17 @@ class Switcher():
             return True
         return False
 
-    def delete_last_word(self):
+    def get_last_word(self):
         """"""
-        # backspace = 14
-        self.keyboard.send([14]*len(self.buffer))
+        index = -1
+        for i, k in enumerate(self.buffer[:-1]):
+            if int(k[:3]) in settings.EOW_KEY_CODES:
+                index = i
+        return self.buffer[index:]
 
-    def type_buffer(self):
+    def type_buffer(self, buffer):
         """"""
-        for key in self.buffer:
+        for key in buffer:
             if int(key[3]) != int(key[4]):  # капс
                 self.keyboard.press(42)
                 self.keyboard.send([int(key[:3])])
@@ -257,71 +260,58 @@ class Switcher():
         encoded[4] = '1' if self.keyboard.is_caps_locked() else '0'        
         return ''.join(encoded)
 
-    def decode_buffer(self, layout='us'):
+    def decode_buffer(self, buffer, layout='us'):
         """"""
         string = ''
-        for v in self.buffer:
+        for v in buffer:
             for k in EV_KEYS:
-                if int(v[:3]) == k[5]:
-                    if v[3] != v[4]:  # капс
-                        string += k[2] if layout == 'us' else k[4]
-                    else:
-                        string += k[1] if layout == 'us' else k[3]
-                    continue
-        return string
 
+                if int(v[:3]) != k[5]:
+                    continue
+
+                # пробел
+                if k[5] in settings.EOW_KEY_CODES:
+                    string += ' '
+                    break
+
+                # капс
+                if v[3] != v[4]:
+                    string += k[2] if layout == 'us' else k[4]
+                else:
+                    string += k[1] if layout == 'us' else k[3]
+                break
+
+        return string
+    
     def update_buffer(self, key_code):
         """"""
+        # ctrl, alt, super
+        if set(self.keyboard.active_keys()) & set([29, 97, 56, 100, 125, 126]):
+            self.buffer = ["00000"]
+            return
+
         # backspace = 14
         if key_code == 14:
             if self.buffer:
-                print('self.buffer.pop')
                 self.buffer.pop()
             # если удалили всю строку в буффере, до добавляем метку начала строки
-            # чтобы по нграммам правильно определился язык нового слова
-            if not self.buffer:
-                self.buffer = ["00000"]
+            # чтобы по нграммам правильно определился язык нового слова (" ns" = " ты")
+            self.buffer = ["00000"] if not self.buffer else self.buffer
             return
 
-        # не многоязыковая клавиша или не клавиша переключения
-        if (
-            key_code not in VIS_KEYS
-            and key_code not in settings.ASWITCH_KEY_CODES
-            and key_code not in settings.MSWITCH_KEY_CODES
-            and key_code not in (29, 97, 42, 54, 57, 58)
-            # ctrl_left, ctrl_right, shift_left, shift_right, space, caps_lock
-        ):
-            # до добавляем метку начала строки
-            self.buffer = ["00000"]
-            return
-
-        # Ctrl + любая клавиша чистят буфер и не добавляет эту букву в буфер.
-        # ctrl_left = 29, ctrl_right = 97
-        if self.keyboard.is_pressed(29) or self.keyboard.is_pressed(97):
-            # до добавляем метку начала строки
-            self.buffer = ["00000"]
-            return
-
-        # Если приходит первый значимый символ после конца слова, то очищаем буфер.
-        # Первое условие обязательно первое чтобы при пустом буфере не падало второе.
-        if (
-            self.buffer
-            and int(self.buffer[-1][:3]) in settings.EOW_KEY_CODES
-            and (key_code in VIS_KEYS or key_code in settings.EOW_KEY_CODES)
-        ):
-            if int(self.buffer[-1][:3]) in settings.EOW_KEY_CODES:
-                self.buffer = [self.buffer[-1]]
-            else:
-                self.buffer.clear()
-
-        # Многоязыковая клавиша
+        # видимый символ
         if key_code in VIS_KEYS:
+            if self.keyboard.active_keys() in (29, 97): 
+                return
             self.buffer.append(self.encode_key(key_code))
+            if len(self.buffer) > self.BUFFER_LENGTH:
+                self.buffer = self.buffer[-self.BUFFER_LENGTH:]
             return
 
-        # Конец слова
-        if key_code in settings.EOW_KEY_CODES:
-            self.buffer.append(self.encode_key(key_code))
+        if (  # key_code not in VIS_KEYS and
+            key_code not in settings.ASWITCH_KEY_CODES and
+            key_code not in settings.MSWITCH_KEY_CODES):
+            self.buffer = ["00000"]
             return
 
     def on_mouse_click(self, event):
@@ -334,6 +324,12 @@ class Switcher():
         key_char = str(event.key_char)
         key_code = int(event.key_code)
 
+        # KEY HOLD
+        if event.type == 'hold':
+            self.buffer = ["00000"]
+            return
+
+        # KEY DOWN
         if event.type == 'down':
             self.update_buffer(key_code)
 
@@ -344,8 +340,9 @@ class Switcher():
             if settings.SWITCH_AUTO:
                 self.kb_auto_process(key_code)
 
+        # KEY UP
         if event.type == 'up':
-            # корректировка состояния если нажатая клавиша еще не отжата
+            # корректировка состояния если клавиша еще не отжата
             if self.STILL_PRESSED:
                 self.STILL_PRESSED = False
                 self.keyboard.send([key_code])

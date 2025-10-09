@@ -173,24 +173,6 @@ class Keyboard:
                 return True
         return False
 
-    def _key_to_char(self, key_name: str):
-        """"""
-        for line in keymap.EV_KEYS:
-            if line[0] == key_name:
-                return line[1]
-
-    def _char_to_key(self, char: str):
-        """"""
-        for line in keymap.EV_KEYS:
-            if char.lower() in (line[1], line[3]):
-                return line[0]
-
-    def _char_to_code(self, char: str):
-        """"""
-        for line in keymap.EV_KEYS:
-            if char.lower() in (line[1], line[3]):
-                return line[5]
-
     def active_keys(self):
         """"""
         listener: InputDevice = self.listeners[self.lastdevid]
@@ -213,6 +195,23 @@ class Keyboard:
         listener.ungrab()
         pass
 
+    def _key_to_char(self, key_name: str):
+        """"""
+        for line in keymap.EV_KEYS:
+            if line[0] == key_name:
+                return line[1]
+
+    def _char_to_key(self, char: str):
+        """"""
+        for line in keymap.EV_KEYS:
+            if char.lower() in (line[1], line[3]):
+                return line[0]
+
+    def _char_to_code(self, char: str):
+        """"""
+        for line in keymap.EV_KEYS:
+            if char.lower() in (line[1], line[3]):
+                return line[5]
 
 ### DEBUG ###
 """
