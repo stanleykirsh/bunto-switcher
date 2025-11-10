@@ -21,7 +21,7 @@ class Switcher():
         self.keyboard = Keyboard()
         self.mouse = Mouse()
 
-        self.buffer = ["000000"]
+        self.buffer = ['000000']
         self.ngrams_ru = []
         self.ngrams_en = []
 
@@ -87,7 +87,7 @@ class Switcher():
             str_1 = "[('xkb','us'),('xkb','ru')]"
 
         # Формируем путь к D-Bus сессии
-        dbus_address = f"unix:path=/run/user/{self.useruid}/bus"
+        dbus_address = f'unix:path=/run/user/{self.useruid}/bus'
 
         # Выполняем команды с указанием D-Bus адреса
         # Объединяем все команды в одну строку
@@ -107,12 +107,12 @@ class Switcher():
 
         # выполняем объединённые команды синхронно
         subprocess.run(
-            ["bash", "-c", commands_0],
+            ['bash', '-c', commands_0],
             shell=False)
 
         # выполняем объединённые команды асинхронно
         Timer(0.25, subprocess.run, kwargs={
-            'args': ["bash", "-c", commands_1],
+            'args': ['bash', '-c', commands_1],
             'shell': False}).start()
 
     def kb_auto_process(self, key_code: int):
@@ -126,7 +126,7 @@ class Switcher():
 
         # для определения языка набранного текста заменяем брейки на пробелы
         # чтобы правильно обрабатывались нграммы начала слов (" ns" = " ты")
-        buf = ["05700" if int(x[:3]) in settings.EOW_KEY_CODES else x for x in buffer]
+        buf = ['05700' if int(x[:3]) in settings.EOW_KEY_CODES else x for x in buffer]
         target_layout = self.get_target_layout(buf)
         
         buffer = [x for x in buffer if int(x[:3]) not in settings.EOW_KEY_CODES]
@@ -147,7 +147,7 @@ class Switcher():
         time.sleep(0.025)
 
         # не печатаем брейки
-        buffer = [x for x in buffer if x not in ("00000")]
+        buffer = [x for x in buffer if x not in ('00000')]
         self.keyboard.send([14]*len(buffer)) # backspace = 14
         self.type_buffer(buffer)
 
@@ -171,7 +171,7 @@ class Switcher():
         self.set_layout(target_layout)
         
         # не печатаем брейки
-        buffer = [x for x in buffer if x not in ("00000")]
+        buffer = [x for x in buffer if x not in ('00000')]
         self.keyboard.send([14]*len(buffer)) # backspace = 14
         self.type_buffer(buffer)
 
@@ -201,7 +201,7 @@ class Switcher():
 
         # для определения языка набранного текста заменяем брейк на пробел
         # чтобы правильно обрабатывались нграммы начала слов (" ns" = " ты")
-        buf = ["05700" if int(x[:3]) == settings.EOW_KEY_CODES else x for x in buffer]
+        buf = ['05700' if int(x[:3]) == settings.EOW_KEY_CODES else x for x in buffer]
         target_layout = self.get_target_layout(buf)
 
         # если требуется конвертация раскладки буфера, то выходим из процедуры
@@ -212,6 +212,8 @@ class Switcher():
         # ждем чтобы GUI успел отрисовать последний символ
         time.sleep(0.025)
         
+        # не печатаем брейки
+        buffer = [x for x in buffer if x not in ('00000')]
         self.keyboard.send([14]*len(buffer)) # backspace = 14
         self.type_buffer(buffer)
 
@@ -255,7 +257,7 @@ class Switcher():
     def encode_key(self, key_code):
         """"""
         # shift_left = 42, shift_right = 54
-        encoded = list(f"{key_code:03d}00")
+        encoded = list(f'{key_code:03d}00')
         encoded[3] = '1' if self.keyboard.is_pressed(42) or self.keyboard.is_pressed(54) else '0'
         encoded[4] = '1' if self.keyboard.is_caps_locked() else '0'        
         return ''.join(encoded)
@@ -287,16 +289,16 @@ class Switcher():
         """"""
         # ctrl, alt, super
         if set(self.keyboard.active_keys()) & set([29, 97, 56, 100, 125, 126]):
-            self.buffer = ["00000"]
+            self.buffer = ['00000']
             return
 
         # backspace = 14
         if key_code == 14:
             if self.buffer:
                 self.buffer.pop()
-            # если удалили всю строку в буффере, до добавляем метку начала строки
+            # если удалили всю строку в буфере, до добавляем метку начала строки
             # чтобы по нграммам правильно определился язык нового слова (" ns" = " ты")
-            self.buffer = ["00000"] if not self.buffer else self.buffer
+            self.buffer = ['00000'] if not self.buffer else self.buffer
             return
 
         # видимый символ
@@ -311,13 +313,13 @@ class Switcher():
         if (  # key_code not in VIS_KEYS and
             key_code not in settings.ASWITCH_KEY_CODES and
             key_code not in settings.MSWITCH_KEY_CODES):
-            self.buffer = ["00000"]
+            self.buffer = ['00000']
             return
 
     def on_mouse_click(self, event):
         """"""
         self.initial_layout = self.get_layout()
-        self.buffer = ["00000"]
+        self.buffer = ['00000']
 
     def is_pressed(self, event):
         """"""
@@ -326,7 +328,7 @@ class Switcher():
 
         # KEY HOLD
         if event.type == 'hold':
-            self.buffer = ["00000"]
+            self.buffer = ['00000']
             return
 
         # KEY DOWN
