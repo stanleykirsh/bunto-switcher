@@ -22,8 +22,6 @@ class Switcher():
         self.mouse = Mouse()
 
         self.buffer = ['000000']
-        self.ngrams_ru = []
-        self.ngrams_en = []
 
         dir_path = os.path.dirname(os.path.realpath(__file__))
         self.ngrams_ru = set(self.load_ngrams((f'{dir_path}/data/ngrams-ru.txt',)))
@@ -47,7 +45,7 @@ class Switcher():
 
     def get_layout_probability(self, string: str):
         """"""
-        LITERALS = ' qwertyuiopasdfghjklzxcvbnmёйцукенгшщзхъфывапролджэячсмитьбю'
+        LITERALS = " qwertyuiopasdfghjklzxcvbnmёйцукенгшщзхъфывапролджэячсмитьбю`,.;'[]"
         string = ''.join(filter(LITERALS.__contains__, string.lower()))
 
         # Для слов исключений вероятность языка неопределенная.
@@ -68,7 +66,7 @@ class Switcher():
     def get_target_layout(self, buffer):
         """"""
         # если не удалось однозначно определить целевой язык то вернет текущее значение  
-        string = self.decode_buffer(buffer, 'us')
+        string = self.decode_buffer(buffer, layout='us', usecaps=False)
         string = string.replace('\t', ' ')
         string = string.replace('\r\n', ' ')
         layout = self.get_layout_probability(string)
@@ -223,7 +221,7 @@ class Switcher():
 
     def upper_fix_required(self, buffer):
         """"""
-        string = self.decode_buffer(buffer, 'us')
+        string = self.decode_buffer(buffer, layout='us', usecaps=False)
         # ИСправление
         if (len(string) >= 2
             and string[0:2].isupper()
@@ -247,10 +245,12 @@ class Switcher():
     def type_buffer(self, buffer):
         """"""
         for key in buffer:
-            if int(key[3]) != int(key[4]):  # капс
+            # капс
+            if int(key[3]) != int(key[4]):
                 self.keyboard.press(42)
                 self.keyboard.send([int(key[:3])])
                 self.keyboard.release(42)
+            # некапс
             else:
                 self.keyboard.send([int(key[:3])])
 
@@ -262,7 +262,7 @@ class Switcher():
         encoded[4] = '1' if self.keyboard.is_caps_locked() else '0'        
         return ''.join(encoded)
 
-    def decode_buffer(self, buffer, layout='us'):
+    def decode_buffer(self, buffer, layout='us', usecaps = True):
         """"""
         string = ''
         for v in buffer:
@@ -277,8 +277,9 @@ class Switcher():
                     break
 
                 # капс
-                if v[3] != v[4]:
+                if v[3] != v[4] and usecaps:
                     string += k[2] if layout == 'us' else k[4]
+                # некапс
                 else:
                     string += k[1] if layout == 'us' else k[3]
                 break
