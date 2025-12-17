@@ -10,7 +10,7 @@ from . import keymap
 
 class Event:
 
-    def __init__(self, key_code: str, key_name: str, key_char: str, event_type: str):
+    def __init__(self, key_code: int, key_name: str, key_char: str, event_type: str):
         """"""
         self.key_code = key_code
         self.key_name = key_name
@@ -67,6 +67,7 @@ class Keyboard:
                     if not os.path.exists(devpath):
                         continue
                     listener = InputDevice(devpath)
+                    listener.grab()
                     controller = UInput.from_device(devpath)
                     thread = Thread(
                         target=self._listener_loop,

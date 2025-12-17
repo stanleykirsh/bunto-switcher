@@ -140,18 +140,11 @@ class Switcher():
 
         self.initial_layout = target_layout
         self.set_layout(target_layout)
-        
-        # ждем чтобы GUI успел отрисовать последний символ
-        time.sleep(0.025)
 
         # не печатаем брейки
         buffer = [x for x in buffer if x not in ('00000')]
         self.keyboard.send([14]*len(buffer)) # backspace = 14
         self.type_buffer(buffer)
-
-        # взводим корректировку состояния если последняя нажатая клавиша еще не отжата
-        if self.keyboard.is_pressed(key_code):
-            self.STILL_PRESSED = True
 
     def kb_manual_process(self, key_code: int):
         """"""
@@ -206,22 +199,15 @@ class Switcher():
         # конвертация раскладки буфера произойдет в kb_auto_process, а капсы мы уже исправили
         if target_layout != self.initial_layout:
             return
-
-        # ждем чтобы GUI успел отрисовать последний символ
-        time.sleep(0.025)
         
         # не печатаем брейки
         buffer = [x for x in buffer if x not in ('00000')]
         self.keyboard.send([14]*len(buffer)) # backspace = 14
         self.type_buffer(buffer)
 
-        # взводим корректировку состояния если последняя нажатая клавиша еще не отжата
-        if self.keyboard.is_pressed(key_code):
-            self.STILL_PRESSED = True
-
     def upper_fix_required(self, buffer):
         """"""
-        string = self.decode_buffer(buffer, layout='us', usecaps=False)
+        string = self.decode_buffer(buffer, layout='us', usecaps=True)
         # ИСправление
         if (len(string) >= 2
             and string[0:2].isupper()
@@ -245,13 +231,14 @@ class Switcher():
     def type_buffer(self, buffer):
         """"""
         for key in buffer:
+            self.keyboard.release(int(key[:3]))
             # капс
             if int(key[3]) != int(key[4]):
-                self.keyboard.press(42)
+                self.keyboard.press(42)                
                 self.keyboard.send([int(key[:3])])
                 self.keyboard.release(42)
             # некапс
-            else:
+            else:                
                 self.keyboard.send([int(key[:3])])
 
     def encode_key(self, key_code):
@@ -311,7 +298,7 @@ class Switcher():
                 self.buffer = self.buffer[-self.BUFFER_LENGTH:]
             return
 
-        if (  # key_code not in VIS_KEYS and
+        if (# key_code not in VIS_KEYS and
             key_code not in settings.ASWITCH_KEY_CODES and
             key_code not in settings.MSWITCH_KEY_CODES):
             self.buffer = ['00000']
@@ -334,6 +321,7 @@ class Switcher():
 
         # KEY DOWN
         if event.type == 'down':
+            self.keyboard.press(key_code)
             self.update_buffer(key_code)
 
             if settings.SWITCH_TWOCAPS:
@@ -345,10 +333,7 @@ class Switcher():
 
         # KEY UP
         if event.type == 'up':
-            # корректировка состояния если клавиша еще не отжата
-            if self.STILL_PRESSED:
-                self.STILL_PRESSED = False
-                self.keyboard.send([key_code])
+            self.keyboard.release(key_code)
             # обновляем текущую раскладку при ручном переключении
             if key_char in (settings.SYS_SWITCH_KEY):
                 self.initial_layout = self.get_layout()
