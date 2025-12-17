@@ -92,26 +92,27 @@ class Switcher():
         commands_0 = (
             f"""sudo -u {self.username} """
             f"""env DBUS_SESSION_BUS_ADDRESS={dbus_address} """
-            f"""gsettings set org.gnome.desktop.input-sources sources "{str_0}"; """)
+            f"""gsettings set org.gnome.desktop.input-sources sources "{str_0}";""")
 
         commands_1 = (
             f"""sudo -u {self.username} """
             f"""env DBUS_SESSION_BUS_ADDRESS={dbus_address} """
-            f"""gsettings set org.gnome.desktop.input-sources mru-sources "{str_1}"; """
+            f"""gsettings set org.gnome.desktop.input-sources mru-sources "{str_1}" &"""
 
             f"""sudo -u {self.username} """
             f"""env DBUS_SESSION_BUS_ADDRESS={dbus_address} """
-            f"""gsettings set org.gnome.desktop.input-sources sources "{str_1}\"""")
+            f"""gsettings set org.gnome.desktop.input-sources sources "{str_1}" &""")
 
-        # выполняем объединённые команды синхронно
+        # Запускаем и ждем завершения
+        # Дождаться выполнения необходимо для корректного срабатывания следюущих команд
         subprocess.run(
             ['bash', '-c', commands_0],
             shell=False)
-
-        # выполняем объединённые команды асинхронно
-        Timer(0.25, subprocess.run, kwargs={
-            'args': ['bash', '-c', commands_1],
-            'shell': False}).start()
+        
+        # Запускаем и не ждем завершения
+        subprocess.Popen(
+            ['bash', '-c', commands_1],
+            shell=False)
 
     def kb_auto_process(self, key_code: int):
         """"""
