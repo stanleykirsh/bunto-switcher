@@ -28,8 +28,8 @@ sudo chown $SUDO_USER: /home/$SUDO_USER/.config/autostart/bunto.desktop
 echo "Добавляю разрешение в sudoers..."
 grep -qxF "## Exception for Bunto Switcher" /etc/sudoers ||
     echo "## Exception for Bunto Switcher" >> /etc/sudoers
-grep -qxF "$SUDO_USER ALL=(ALL) NOPASSWD: /usr/bin/python /usr/share/bunto/switcher.py" /etc/sudoers ||
-    echo "$SUDO_USER ALL=(ALL) NOPASSWD: /usr/bin/python /usr/share/bunto/switcher.py" >> /etc/sudoers
+grep -qxF "$SUDO_USER ALL=(ALL) NOPASSWD: /usr/bin/nice -n -20 python /usr/share/bunto/switcher.py" /etc/sudoers ||
+    echo "$SUDO_USER ALL=(ALL) NOPASSWD: /usr/bin/nice -n -20 python /usr/share/bunto/switcher.py" >> /etc/sudoers
 
 # Определяем тип ОС
 which which dnf >/dev/null 2>&1 || { 

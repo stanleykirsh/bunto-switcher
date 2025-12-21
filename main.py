@@ -22,7 +22,7 @@ from gi.repository import AppIndicator3 as appindicator
 
 APPINDICATOR_ID = 'buntoappindicator'
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
-SWITCHER_COMMAND = 'sudo python /usr/share/bunto/switcher.py'
+SWITCHER_COMMAND = 'sudo nice -n -20 python /usr/share/bunto/switcher.py'
 
 
 class SwitcherProcess:

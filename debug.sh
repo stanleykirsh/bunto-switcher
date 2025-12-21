@@ -1,1 +1,1 @@
-sudo python switcher.py
+sudo nice -n -20 python switcher.py

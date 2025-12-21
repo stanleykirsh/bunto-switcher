@@ -20,28 +20,25 @@ class Event:
 
 class Keyboard:
 
-    listeners = []
-    controllers = []
-    devthreads = []
-
-    lastdevid = 0
-    controller = None
-    devices = None
-
-    # sec 0.02, assumed 50Hz typical keyboard ratio # sinse GNOME 45 works
-    # sinse GNOME 45 works instantly, so set to 0.0
-    _KEY_DELAY = 0.0
-
-    _GETDEVICE_DELAY = 10   # sec 10
-    _EXCEPTION_DELAY = 5    # sec 5
-    _TERMINATION_SIGN = False
-
-    _LOG_FILE = '/usr/share/bunto/error.log'
-    logging.basicConfig(filename=_LOG_FILE, level=logging.DEBUG)
-
     def __init__(self):
         """"""
-        pass
+        self.listeners : list[InputDevice] = []
+        self.controllers = []
+        self.devthreads = []
+
+        self.lastdevid = 0
+        self.controller = None
+
+        self._GETDEVICE_DELAY = 15   # sec 10
+        self._EXCEPTION_DELAY = 5    # sec 5
+        self._TERMINATE = False
+
+        self.KEY_TO_CHAR = {x[0]: x[1] for x in keymap.EV_KEYS}        
+        # self.CHAR_TO_KEY = {x[1]: x[0] for x in keymap.EV_KEYS} | {x[3]: x[0] for x in keymap.EV_KEYS}
+        self.CHAR_TO_CODE = {x[1]: x[5] for x in keymap.EV_KEYS} | {x[3]: x[5] for x in keymap.EV_KEYS}
+
+        _LOG_FILE = '/usr/share/bunto/error.log'
+        logging.basicConfig(filename=_LOG_FILE, level=logging.DEBUG)
 
     def _main_loop(self, callback):
         """"""
@@ -51,10 +48,10 @@ class Keyboard:
 
                 # [Re]create main thread when devices was changed.
                 # Stop working threads if exist. And create new ones.
-                self._TERMINATION_SIGN = True
+                self._TERMINATE = True
                 for devthread in self.devthreads:
                     devthread.join()
-                self._TERMINATION_SIGN = False
+                self._TERMINATE = False
 
                 self.listeners = []
                 self.controllers = []
@@ -67,7 +64,6 @@ class Keyboard:
                     if not os.path.exists(devpath):
                         continue
                     listener = InputDevice(devpath)
-                    listener.grab()
                     controller = UInput.from_device(devpath)
                     thread = Thread(
                         target=self._listener_loop,
@@ -78,34 +74,34 @@ class Keyboard:
                     self.controllers.append(controller)
                     self.devthreads.append(thread)
 
-                self.devices = _devices
+                # self.grab()
                 sleep(self._GETDEVICE_DELAY)
 
             except Exception as e:
-                self.devices = None
+                # self.ungrab()
                 logging.exception(f'{datetime.now()} Exception occurred')
                 print(f'Exception in keyboard _main_loop: {e}')
                 sleep(self._EXCEPTION_DELAY)
 
     def _listener_loop(self, callback, listener):
         """"""
-        while not self._TERMINATION_SIGN:
+        while not self._TERMINATE:
             try:
                 for event in listener.read_loop():
                     self.lastdevid = int(current_thread().name)
-                    if not self.controllers:
-                        continue
-                    self.controller = self.controllers[self.lastdevid]
+                    if self.controllers:
+                        self.controller = self.controllers[self.lastdevid]
                     if event.type == ecodes.EV_KEY:
                         categorized = str(categorize(event)).split()
-                        key_code = categorized[4]
-                        key_name = categorized[5][1:-2]
-                        key_char = self._key_to_char(key_name)
-                        event_type = categorized[6]
                         callback(
-                            Event(key_code, key_name, key_char, event_type))
+                            Event(
+                                key_code=categorized[4],
+                                key_name=categorized[5][1:-2],
+                                event_type=categorized[6],
+                                key_char=''  # self.KEY_TO_CHAR[key_name])
+                            ))
             except Exception as e:
-                self.devices = None
+                # self.ungrab()
                 logging.exception(f'{datetime.now()} Exception occurred')
                 print(f'Exception in keyboard _listener_loop: {e}')
                 sleep(self._EXCEPTION_DELAY)
@@ -133,39 +129,31 @@ class Keyboard:
             daemon=True)
         thread.start()
 
-    def press(self, key: int | str):
+    def press(self, key_code: int):
         """"""
-        key_code = key
-        if isinstance(key, str): key_code = ecodes.ecodes[self._char_to_key(key)]
         self.controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
         self.controller.syn()
 
-    def release(self, key: int | str):
+    def release(self, key_code: int):
         """"""
-        key_code = key
-        if isinstance(key, str): key_code = ecodes.ecodes[self._char_to_key(key)]
         self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up
         self.controller.syn()
 
-    def send(self, keys: list[int] | list[str]):
+    def type(self, key_codes: list[int], delay_milliseconds:int = 0):
         """"""
-        for key in keys:
-            key_code = key
-            if isinstance(key, str): key_code = ecodes.ecodes[self._char_to_key(key)]
+        for key_code in key_codes:
             self.controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
+            self.controller.syn()
             self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up     
-        self.controller.syn()
+            self.controller.syn()
+            sleep(delay_milliseconds)
 
-    def is_pressed(self, key: int | str):
+    def is_pressed(self, key_code: int) -> bool:
         """"""        
-        key_code = key
         listener = self.listeners[self.lastdevid]
-        if isinstance(key, str): key_code = self._char_to_code(key)        
-        if key_code in listener.active_keys(verbose=False):
-            return True
-        return False
+        return key_code in listener.active_keys(verbose=False)
 
-    def is_caps_locked(self):
+    def is_caps_locked(self) -> bool:
         """"""
         listener = self.listeners[self.lastdevid]
         leds = listener.leds(verbose=True)
@@ -174,45 +162,19 @@ class Keyboard:
                 return True
         return False
 
-    def active_keys(self):
+    def active_keys(self) -> list[int]:
         """"""
-        listener: InputDevice = self.listeners[self.lastdevid]
+        listener = self.listeners[self.lastdevid]
         return listener.active_keys(verbose=False)
 
-    def kbdinfo(self):
+    def grab(self) -> None:
         """"""
-        listener: InputDevice = self.listeners[self.lastdevid]
-        return listener
+        self.listeners[self.lastdevid].grab()
 
-    def grab(self):
+    def ungrab(self) -> None:
         """"""
-        listener: InputDevice = self.listeners[self.lastdevid]
-        listener.grab()
-        pass
+        self.listeners[self.lastdevid].ungrab()
 
-    def ungrab(self):
-        """"""
-        listener: InputDevice = self.listeners[self.lastdevid]
-        listener.ungrab()
-        pass
-
-    def _key_to_char(self, key_name: str):
-        """"""
-        for line in keymap.EV_KEYS:
-            if line[0] == key_name:
-                return line[1]
-
-    def _char_to_key(self, char: str):
-        """"""
-        for line in keymap.EV_KEYS:
-            if char.lower() in (line[1], line[3]):
-                return line[0]
-
-    def _char_to_code(self, char: str):
-        """"""
-        for line in keymap.EV_KEYS:
-            if char.lower() in (line[1], line[3]):
-                return line[5]
 
 ### DEBUG ###
 """

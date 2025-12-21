@@ -15,33 +15,30 @@ class Event:
 
 class Mouse:
 
-    listeners = []
-    devthreads = []
-    lastdevid = 0
-
-    _GETDEVICE_DELAY = 30   # sec 30
-    _EXCEPTION_DELAY = 5    # sec 5
-    _TERMINATION_SIGN = False
-
     def __init__(self):
         """"""
-        pass
+        self.listeners = []
+        self.devthreads = []
+        self.lastdevid = 0
+
+        self._GETDEVICE_DELAY = 30   # sec 30
+        self._EXCEPTION_DELAY = 5    # sec 5
+        self._TERMINATE = False
 
     def _main_loop(self, callback):
         """"""
         while True:
             try:
                 # Stop working thread if exist.
-                self._TERMINATION_SIGN = True
+                self._TERMINATE = True
                 for devthread in self.devthreads:
                     devthread.join()
-                self._TERMINATION_SIGN = False
+                self._TERMINATE = False
 
                 self.listeners = []
                 self.devthreads = []
 
-                # (Re)create main thread in any case.
-                # If device configuration has been changed then it resets in every _GETDEVICE_DELAY seconds.
+                # Recreate device threads every _GETDEVICE_DELAY seconds.
                 for devid, devpath in enumerate(self._get_devices()):
                     listener = InputDevice(devpath)
                     thread = Thread(
@@ -52,27 +49,25 @@ class Mouse:
                     self.listeners.append(listener)
                     self.devthreads.append(thread)
                 sleep(self._GETDEVICE_DELAY)
+
             except Exception as e:
                 print(f'Exception in mouse _main_loop: {e}')
                 sleep(self._EXCEPTION_DELAY)
 
     def _listener_loop(self, callback, listener):
         """"""
-        while not self._TERMINATION_SIGN:
+        while not self._TERMINATE:
             try:
                 for event in listener.read_loop():
                     self.lastdevid = int(current_thread().name)
                     if event.type == ecodes.EV_KEY:
                         categorized = str(categorize(event))
                         if 'BTN_LEFT' in categorized and 'down' in categorized:
-                            callback(Event('272', 'BTN_LEFT',
-                                     'left button', categorized[-1]))
+                            callback(Event('272', 'BTN_LEFT', 'left button', categorized[-1]))
                         if 'BTN_MIDDLE' in categorized and 'down' in categorized:
-                            callback(Event('274', 'BTN_MIDDLE',
-                                     'middle button', categorized[-1]))
+                            callback(Event('274', 'BTN_MIDDLE', 'middle button', categorized[-1]))
                         if 'BTN_RIGHT' in categorized and 'down' in categorized:
-                            callback(Event('273', 'BTN_RIGHT',
-                                     'right button', categorized[-1]))
+                            callback(Event('273', 'BTN_RIGHT', 'right button', categorized[-1]))
             except Exception as e:
                 print(f'Exception in mouse _listener_loop: {e}')
                 sleep(self._EXCEPTION_DELAY)
