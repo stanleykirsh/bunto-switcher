@@ -6,6 +6,7 @@ from keyboard.keyboard import Keyboard
 from keyboard.keymap import (EV_KEYS, VIS_KEYS)
 from gi.repository import Gtk as gtk
 from threading import Timer
+from time import sleep
 
 import os
 import settings
@@ -109,7 +110,7 @@ class Switcher():
         
         # Запускаем и не ждем завершения
         # Запускаем с небольшой задержкой для плавности
-        Timer(0.2, subprocess.run, kwargs={
+        Timer(0.0, subprocess.run, kwargs={
             'args': ['bash', '-c', commands_1],
             'shell': False}).start()
 
@@ -124,10 +125,10 @@ class Switcher():
 
         # для определения языка набранного текста заменяем брейки на пробелы
         # чтобы правильно обрабатывались нграммы начала слов (" ns" = " ты")
-        buf = ['05700' if int(x[:3]) in settings.EOW_KEY_CODES else x for x in buffer]
+        buf = ['05700' if x[:4] in settings.EOW_KEY_CODES else x for x in buffer]
         target_layout = self.get_target_layout(buf)
         
-        buffer = [x for x in buffer if int(x[:3]) not in settings.EOW_KEY_CODES]
+        buffer = [x for x in buffer if x[:4] not in settings.EOW_KEY_CODES]
         buffer.append(self.encode_key(key_code))
         
         # не исправляем если целевая раскладка та же
@@ -182,8 +183,8 @@ class Switcher():
             return
 
         # если в буфере первые два символа не капсом,то выходим ...
-        # для этого преобразуем [BRAKEсловоEOW, EOWсловоEOW, BRAKEслово, EOWслово] => слово
-        buf = [x for x in buffer if int(x[:3]) not in settings.EOW_KEY_CODES]
+        # для этого преобразуем [BRAKEсловоEOW, EOWсловоEOW, BRAKEслово, EOWслово] => "слово"
+        buf = [x for x in buffer if x[:4] not in settings.EOW_KEY_CODES]
         if not self.upper_fix_required(buf):
             return
 
@@ -194,13 +195,16 @@ class Switcher():
 
         # для определения языка набранного текста заменяем брейк на пробел
         # чтобы правильно обрабатывались нграммы начала слов (" ns" = " ты")
-        buf = ['05700' if int(x[:3]) == settings.EOW_KEY_CODES else x for x in buffer]
+        buf = ['05700' if x[:4] in settings.EOW_KEY_CODES else x for x in buffer]        
         target_layout = self.get_target_layout(buf)
 
         # если требуется конвертация раскладки буфера, то выходим из процедуры
         # конвертация раскладки буфера произойдет в kb_auto_process, а капсы мы уже исправили
         if target_layout != self.initial_layout:
             return
+        
+        buffer = [x for x in buffer if x[:4] not in settings.EOW_KEY_CODES]
+        buffer.append(self.encode_key(key_code))
         
         # взводим корректировку состояния если последняя нажатая клавиша еще не отжата
         if self.keyboard.is_pressed(key_code):
@@ -232,7 +236,7 @@ class Switcher():
         """"""
         index = -1
         for i, k in enumerate(self.buffer[:-1]):
-            if int(k[:3]) in settings.EOW_KEY_CODES:
+            if k[:4] in settings.EOW_KEY_CODES:
                 index = i
         return self.buffer[index:]
 
@@ -258,23 +262,25 @@ class Switcher():
         return ''.join(encoded)
 
     def decode_buffer(self, buffer, layout='us', usecaps = True):
-        """"""
+        """"""        
         string = ''
         for v in buffer:
+            
+            # любой симовол окончания строки меняем на пробел
+            if v[:4] in settings.EOW_KEY_CODES:
+                string += ' '
+                continue
+            
             for k in EV_KEYS:
 
+                # символ не из печатного множества
                 if int(v[:3]) != k[5]:
                     continue
 
-                # пробел
-                if k[5] in settings.EOW_KEY_CODES:
-                    string += ' '
-                    break
-
-                # капс
+                # печатный символ + капс
                 if v[3] != v[4] and usecaps:
                     string += k[2] if layout == 'us' else k[4]
-                # некапс
+                # печатный символ + некапс
                 else:
                     string += k[1] if layout == 'us' else k[3]
                 break
@@ -284,9 +290,13 @@ class Switcher():
     def update_buffer(self, key_code):
         """"""
         # ctrl, alt, super
-        if set(self.keyboard.active_keys()) & set([29, 97, 56, 100, 125, 126]):
+        # if set(self.keyboard.active_keys()) & set([29, 97, 56, 100, 125, 126, 103, 105, 106, 108]):
+        """if (not key_code == 14 and
+            not key_code in VIS_KEYS and            
+            not key_code in settings.ASWITCH_KEY_CODES and
+            not key_code in settings.MSWITCH_KEY_CODES):
             self.buffer = ['00000']
-            return
+            return"""
 
         # backspace = 14
         if key_code == 14:
@@ -299,18 +309,15 @@ class Switcher():
 
         # видимый символ
         if key_code in VIS_KEYS:
-            if self.keyboard.active_keys() in (29, 97): 
-                return
             self.buffer.append(self.encode_key(key_code))
-            if len(self.buffer) > self.BUFFER_LENGTH:
-                self.buffer = self.buffer[-self.BUFFER_LENGTH:]
             return
-
-        if (# key_code not in VIS_KEYS and
+       
+        # любой другой непечатный символ если это не признак автопереключения
+        """if (#key_code not in VIS_KEYS and
             key_code not in settings.ASWITCH_KEY_CODES and
             key_code not in settings.MSWITCH_KEY_CODES):
             self.buffer = ['00000']
-            return
+            return"""
 
     def on_mouse_event(self, event):
         """"""
@@ -323,14 +330,15 @@ class Switcher():
         key_code = int(event.key_code)
 
         # KEY HOLD
-        if event.type == 'hold':
+        """if event.type == 'hold':
             self.buffer = ['00000']
-            return
+            return"""
 
         # KEY DOWN
         if event.type == 'down':
             # self.keyboard.press(key_code)
             self.update_buffer(key_code)
+            self.buffer = self.buffer[-self.BUFFER_LENGTH:]
 
             if settings.SWITCH_TWOCAPS:
                 self.caps_auto_process(key_code)
