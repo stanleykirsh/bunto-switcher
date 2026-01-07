@@ -127,14 +127,14 @@ class Switcher():
         # чтобы правильно обрабатывались нграммы начала слов (" ns" = " ты")
         buf = ['05700' if x[:4] in settings.EOW_KEY_CODES else x for x in buffer]
         target_layout = self.get_target_layout(buf)
-        
-        buffer = [x for x in buffer if x[:4] not in settings.EOW_KEY_CODES]
-        buffer.append(self.encode_key(key_code))
-        
+
         # не исправляем если целевая раскладка та же
         if target_layout == self.initial_layout:
             return
 
+        buffer = [x for x in buffer if x[:4] not in settings.EOW_KEY_CODES]
+        buffer.append(self.encode_key(key_code))
+        
         # не исправляем аббревиатуры капсом
         if all(code[2:4] in ('00', '11') for code in buffer):
             return
@@ -289,17 +289,7 @@ class Switcher():
     
     def update_buffer(self, key_code):
         """"""
-        # ctrl, alt, super
-        # if set(self.keyboard.active_keys()) & set([29, 97, 56, 100, 125, 126, 103, 105, 106, 108]):
-        """if (not key_code == 14 and
-            not key_code in VIS_KEYS and            
-            not key_code in settings.ASWITCH_KEY_CODES and
-            not key_code in settings.MSWITCH_KEY_CODES):
-            self.buffer = ['00000']
-            return"""
-
-        # backspace = 14
-        if key_code == 14:
+        if key_code == 14: # backspace
             if self.buffer:
                 self.buffer.pop()
             # если удалили всю строку в буфере, до добавляем метку начала строки
@@ -311,13 +301,6 @@ class Switcher():
         if key_code in VIS_KEYS:
             self.buffer.append(self.encode_key(key_code))
             return
-       
-        # любой другой непечатный символ если это не признак автопереключения
-        """if (#key_code not in VIS_KEYS and
-            key_code not in settings.ASWITCH_KEY_CODES and
-            key_code not in settings.MSWITCH_KEY_CODES):
-            self.buffer = ['00000']
-            return"""
 
     def on_mouse_event(self, event):
         """"""
@@ -330,9 +313,10 @@ class Switcher():
         key_code = int(event.key_code)
 
         # KEY HOLD
-        """if event.type == 'hold':
+        if (event.type == 'hold' and
+            key_code not in (42, 54)): # shift
             self.buffer = ['00000']
-            return"""
+            return
 
         # KEY DOWN
         if event.type == 'down':
