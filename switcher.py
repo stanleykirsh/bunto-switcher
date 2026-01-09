@@ -6,7 +6,6 @@ from keyboard.keyboard import Keyboard
 from keyboard.keymap import (EV_KEYS, VIS_KEYS)
 from gi.repository import Gtk as gtk
 from threading import Timer
-from time import sleep
 
 import os
 import settings
@@ -70,7 +69,7 @@ class Switcher():
         string = string.replace('\r\n', ' ')
         layout = self.get_layout_probability(string)
         if (layout == 'ru' and self.initial_layout == 'us'): return 'ru'
-        if (layout == 'us' and self.initial_layout == 'ru'): return 'us'        
+        if (layout == 'us' and self.initial_layout == 'ru'): return 'us'
         return self.initial_layout
 
     def set_layout(self, layout: str):

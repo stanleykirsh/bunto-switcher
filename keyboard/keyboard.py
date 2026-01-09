@@ -34,8 +34,8 @@ class Keyboard:
         self._TERMINATE = False
 
         self.KEY_TO_CHAR = {x[0]: x[1] for x in keymap.EV_KEYS}        
-        # self.CHAR_TO_KEY = {x[1]: x[0] for x in keymap.EV_KEYS} | {x[3]: x[0] for x in keymap.EV_KEYS}
         self.CHAR_TO_CODE = {x[1]: x[5] for x in keymap.EV_KEYS} | {x[3]: x[5] for x in keymap.EV_KEYS}
+        # self.CHAR_TO_KEY = {x[1]: x[0] for x in keymap.EV_KEYS} | {x[3]: x[0] for x in keymap.EV_KEYS}
 
         _LOG_FILE = '/usr/share/bunto/error.log'
         logging.basicConfig(filename=_LOG_FILE, level=logging.DEBUG)
@@ -144,9 +144,10 @@ class Keyboard:
         for key_code in key_codes:
             self.controller.write(ecodes.EV_KEY, key_code, 1)  # KEY_X down
             self.controller.syn()
+            sleep(delay_milliseconds // 2)
             self.controller.write(ecodes.EV_KEY, key_code, 0)  # KEY_X up     
             self.controller.syn()
-            sleep(delay_milliseconds)
+            sleep(delay_milliseconds // 2)
 
     def is_pressed(self, key_code: int) -> bool:
         """"""        
