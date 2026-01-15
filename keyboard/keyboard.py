@@ -64,6 +64,7 @@ class Keyboard:
                     if not os.path.exists(devpath):
                         continue
                     listener = InputDevice(devpath)
+                    self.grab(listener)
                     controller = UInput.from_device(devpath)
                     thread = Thread(
                         target=self._listener_loop,
@@ -78,7 +79,9 @@ class Keyboard:
                 sleep(self._GETDEVICE_DELAY)
 
             except Exception as e:
-                # self.ungrab()
+                """if self.listeners:
+                    for listener in self.listeners:
+                        self.ungrab(listener)"""
                 logging.exception(f'{datetime.now()} Exception occurred')
                 print(f'Exception in keyboard _main_loop: {e}')
                 sleep(self._EXCEPTION_DELAY)
@@ -98,10 +101,12 @@ class Keyboard:
                                 key_code=categorized[4],
                                 key_name=categorized[5][1:-2],
                                 event_type=categorized[6],
-                                key_char=''  # self.KEY_TO_CHAR[key_name])
+                                key_char='' # self.KEY_TO_CHAR[key_name])
                             ))
             except Exception as e:
-                # self.ungrab()
+                """if self.listeners:
+                    for listener in self.listeners:
+                        self.ungrab(listener)"""
                 logging.exception(f'{datetime.now()} Exception occurred')
                 print(f'Exception in keyboard _listener_loop: {e}')
                 sleep(self._EXCEPTION_DELAY)
@@ -117,7 +122,10 @@ class Keyboard:
                     print('обнаружено устройство типа клавиатура:', path)
                     devpaths.append(listener.path)
             except Exception as _:
-                pass
+                """if self.listeners:
+                    for listener in self.listeners:
+                        self.ungrab(listener) """
+                pass   
         return devpaths
 
     def on_key_event(self, callback):
@@ -168,13 +176,27 @@ class Keyboard:
         listener = self.listeners[self.lastdevid]
         return listener.active_keys(verbose=False)
 
-    def grab(self) -> None:
+    def grab(self, device: InputDevice) -> None:
+        """"""
+        try:
+            device.grab()
+        except:
+            pass
+
+    def ungrab(self, device: InputDevice) -> None:
+        """"""
+        try:
+            device.ungrab()
+        except:
+            pass
+    
+    """def grab(self) -> None:
         """"""
         self.listeners[self.lastdevid].grab()
 
     def ungrab(self) -> None:
         """"""
-        self.listeners[self.lastdevid].ungrab()
+        self.listeners[self.lastdevid].ungrab()"""
 
 
 ### DEBUG ###
