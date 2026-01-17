@@ -29,8 +29,8 @@ class Keyboard:
         self.lastdevid = 0
         self.controller = None
 
-        self._GETDEVICE_DELAY = 15   # sec 10
-        self._EXCEPTION_DELAY = 5    # sec 5
+        self._GETDEVICE_DELAY = 10   # sec 10
+        self._EXCEPTION_DELAY = 1    # sec 5
         self._TERMINATE = False
 
         self.KEY_TO_CHAR = {x[0]: x[1] for x in keymap.EV_KEYS}        
@@ -125,7 +125,11 @@ class Keyboard:
                 """if self.listeners:
                     for listener in self.listeners:
                         self.ungrab(listener) """
-                pass   
+                # Здесь sleep не нужен, он только замедляет обновление устройств.
+                # Сюда приходим только когда InputDevice(path) не является валидным evdev устройством.
+                # Но таких находится всего несколько штук. Быстро их пролетаем, создаем валидные 
+                # и больше сюда не возвращаемся пока система не обновит список аппаратных устройств.
+                # sleep(self._EXCEPTION_DELAY)
         return devpaths
 
     def on_key_event(self, callback):
@@ -158,7 +162,7 @@ class Keyboard:
             sleep(delay_milliseconds // 2)
 
     def is_pressed(self, key_code: int) -> bool:
-        """"""        
+        """"""
         listener = self.listeners[self.lastdevid]
         return key_code in listener.active_keys(verbose=False)
 

@@ -22,15 +22,13 @@ class Switcher():
         self.buffer = ['00000']
 
         dir_path = os.path.dirname(os.path.realpath(__file__))
-        self.ngrams_ru = set(self.load_ngrams((f'{dir_path}/data/ngrams-ru.txt',)))
-        self.ngrams_en = set(self.load_ngrams((f'{dir_path}/data/ngrams-en.txt',)))
+        self.ngrams_ru = self.load_ngrams((f'{dir_path}/data/ngrams-ru.txt',))
+        self.ngrams_en = self.load_ngrams((f'{dir_path}/data/ngrams-en.txt',))
 
         self.username = os.environ['SUDO_USER']
         self.useruid = os.environ['SUDO_UID']
         
         self.initial_layout = self.get_layout()
-        # self.STILL_PRESSED = False
-        self.BUFFER_LENGTH = 32
 
     def load_ngrams(self, filenames):
         """"""
@@ -41,6 +39,54 @@ class Switcher():
                 result.extend(lines)
         return result
 
+    def split_into_ngrams(self, string, min_len=2, max_len=4):
+        """
+        Разбивает строку на n-граммы заданной длины, выделяя:
+        - n-граммы, начинающиеся с пробела (левая сторона)
+        - n-граммы из центральной части (без крайних пробелов)
+        - n-граммы, заканчивающиеся пробелом (правая сторона)
+        
+        Параметры:
+        string (str): входная строка
+        min_len (int): минимальная длина n-граммы
+        max_len (int): максимальная длина n-граммы
+        
+        Возвращает:
+        list: объединённый список n-грамм (левые + центральные + правые)
+        """
+
+        def _split_into_ngrams_(s, min_len, max_len):
+            """Вспомогательная функция для генерации n-грамм из строки."""
+            result = []
+            n = len(s)
+
+            for i in range(n):
+                for length in range(min_len, max_len + 1):
+                    if i + length <= n:
+                        substring = s[i:i + length]
+                        if ' ' not in substring.strip():
+                            result.append(substring)
+            return result
+        
+        # Генерируем n-граммы для всей строки (с пробелами по краям)
+        result_sides = _split_into_ngrams_(string, min_len, max_len)
+
+        # Генерируем n-граммы для центральной части (без крайних пробелов)
+        stripped = string.strip()
+        if len(stripped) > 2:
+            center_part = stripped[1:-1]
+            result_center = _split_into_ngrams_(center_part, min_len, max_len)
+        else:
+            result_center = []
+
+        # Фильтруем n-граммы по позициям пробелов
+        result_left = [x for x in result_sides if x[0] == ' ']
+        result_right = [x for x in result_sides if x[-1] == ' ']
+
+        # Объединяем результаты
+        result = list(set(result_left + result_center + result_right))
+        return result
+
     def get_layout_probability(self, string: str):
         """"""
         LITERALS = " qwertyuiopasdfghjklzxcvbnmёйцукенгшщзхъфывапролджэячсмитьбю`,.;'[]"
@@ -48,11 +94,16 @@ class Switcher():
 
         # Для слов исключений вероятность языка неопределенная.
         # Менять раскладку автоматически для них не требуется.
-        if string.strip() in settings.IGNORE_WORDS.splitlines():
-            return ''
+        """if string.strip() in settings.IGNORE_WORDS.splitlines():
+            return ''"""
 
-        prob_ru = sum(ng in string for ng in self.ngrams_ru)
-        prob_en = sum(ng in string for ng in self.ngrams_en)
+        ngrams = self.split_into_ngrams(string=string, min_len=2, max_len=4)
+
+        prob_ru = sum(ng in self.ngrams_ru for ng in ngrams)
+        prob_en = sum(ng in self.ngrams_en for ng in ngrams)
+
+        # prob_ru = sum(ng in string for ng in self.ngrams_ru)
+        # prob_en = sum(ng in string for ng in self.ngrams_en)
 
         return 'ru' if prob_ru > prob_en else 'us' if prob_ru < prob_en else ''
 
@@ -115,12 +166,11 @@ class Switcher():
 
     def kb_auto_process(self, key_code: int):
         """"""
-        # get_last_word возвращает: BRAKEсловоEOW, EOWсловоEOW, BRAKEслово, EOWслово
-        # buffer = self.get_last_word()
         buffer = self.buffer
         
         if (not buffer or
-            key_code not in settings.ASWITCH_KEY_CODES):
+            key_code == 14 or  # backspace
+            key_code not in VIS_KEYS):
             return
         
         # удаляем все пробелы и брейки слева и справа 
@@ -129,7 +179,8 @@ class Switcher():
 
         # добавляем в начало и конец по пробелу чтобы правильно 
         # обрабатывались нграммы начала слов (" ns " = " ты ")
-        target_layout = self.get_target_layout(['05700'] + buffer + ['05700'])
+        # target_layout = self.get_target_layout(['05700'] + buffer + ['05700'])
+        target_layout = self.get_target_layout(['05700'] + buffer)
 
         # не исправляем если целевая раскладка та же
         if target_layout == self.initial_layout:
@@ -140,22 +191,16 @@ class Switcher():
             return
 
         # возвращаем в конец буфера последнюю нажатую клавишу
-        buffer.append(self.encode_key(key_code))
+        # buffer.append(self.encode_key(key_code))
         
         self.initial_layout = target_layout
         self.set_layout(target_layout)
-
-        # взводим корректировку состояния если последняя нажатая клавиша еще не отжата
-        """if self.keyboard.is_pressed(key_code):
-            self.STILL_PRESSED = True"""
 
         self.keyboard.type([14]*len(buffer)) # backspace = 14
         self.type_buffer(buffer)
 
     def kb_manual_process(self, key_code: int):
         """"""
-        # get_last_word возвращает: BRAKEсловоEOW, EOWсловоEOW, BRAKEслово, EOWслово
-        # buffer = self.get_last_word()
         buffer = self.buffer[1:]
 
         if (not buffer or
@@ -179,8 +224,6 @@ class Switcher():
 
     def caps_auto_process(self, key_code: int):
         """"""
-        # get_last_word возвращает: BRAKEсловоEOW, EOWсловоEOW, BRAKEслово, EOWслово
-        # buffer = self.get_last_word()
         buffer = self.buffer
 
         if (not buffer or
@@ -213,10 +256,6 @@ class Switcher():
         
         # возвращаем в конец буфера последнюю нажатую клавишу
         buffer.append(self.encode_key(key_code))
-        
-        # взводим корректировку состояния если последняя нажатая клавиша еще не отжата
-        """if self.keyboard.is_pressed(key_code):
-            self.STILL_PRESSED = True"""
 
         self.keyboard.type([14]*len(buffer)) # backspace = 14
         self.type_buffer(buffer)
@@ -235,15 +274,6 @@ class Switcher():
                 and not string.islower()):
             return True
         return False
-
-    """def get_last_word(self):
-        """"""
-        index = 0
-        if not self.buffer: return ['00000']
-        for i, _ in enumerate(self.buffer[:-1]):
-            if self.buffer[i][:4] in settings.EOW_KEY_CODES:
-                index = i + 1
-        return self.buffer[index:]"""
 
     def type_buffer(self, buffer):
         """"""
@@ -294,33 +324,36 @@ class Switcher():
     
     def update_buffer(self, key_code):
         """"""
-        if key_code == 14: # backspace
+        if key_code == 14: # backspace            
             if self.buffer:
                 self.buffer.pop()
             # если удалили всю строку в буфере, до добавляем метку начала строки
-            self.buffer = ['00000'] if not self.buffer else self.buffer            
+            self.buffer = ['00000'] if not self.buffer else self.buffer
+            return
+        
+        # если зажат ctrl то обнуляем буфер и символ не добавляем
+        if bool(set(self.keyboard.active_keys()) & set((29, 97))): # ctrl
+            self.buffer = ['00000']
             return
         
         # видимый символ
         if key_code in VIS_KEYS:
+            # это первый видимый символ после конца слова то обнуляем буфер
             if self.buffer[-1][:4] in settings.EOW_KEY_CODES:
-                print('clear buffer')
                 self.buffer = ['00000']
+            # добавляем символ в буфер
             self.buffer.append(self.encode_key(key_code))
-            # обрезаем буффер до максимально допустимой длины
-            # self.buffer = self.buffer[-self.BUFFER_LENGTH:]            
-            print(self.buffer)
             return
 
-        # любой другой непечатный символ если это не признак 
-        # автопереключения например: ctrl + z, стрелки
-        """if (key_code not in (42, 54) and
+        # любой другой невидимый символ, например: ctrl + z, стрелки        
+        # но учитываем что буфер не обнуляют: 
+        # - шифт не обнуляет буфер, т.к. может быть shift + видимый символ
+        # - символ-признак автопереключения и или ручного переключения
+        if (key_code not in (42, 54) and
             key_code not in settings.ASWITCH_KEY_CODES and
-            key_code not in settings.MSWITCH_KEY_CODES # and
-            #  self.buffer[-1][:4] not in settings.EOW_KEY_CODES
-            ):
-            self.buffer.append('00000')            
-            return"""
+            key_code not in settings.MSWITCH_KEY_CODES):
+            self.buffer = ['00000']
+            return
 
     def on_mouse_event(self, event):
         """"""
@@ -329,14 +362,13 @@ class Switcher():
 
     def on_keyboard_event(self, event):
         """"""
-        key_char = str(event.key_char)
         key_code = int(event.key_code)
 
         # KEY HOLD
-        """if (event.type == 'hold' and
+        if (event.type == 'hold' and
             key_code not in (42, 54)): # shift
             self.buffer = ['00000']
-            return"""
+            return
 
         # KEY DOWN
         if event.type == 'down':
@@ -353,12 +385,9 @@ class Switcher():
         # KEY UP
         if event.type == 'up':
             self.keyboard.release(key_code)
-            # корректировка состояния если клавиша еще не отжата
-            """if self.STILL_PRESSED:
-                self.STILL_PRESSED = False
-                self.keyboard.type([key_code])"""
+
             # обновляем текущую раскладку при ручном переключении
-            if key_char in (settings.SYS_SWITCH_KEY):
+            if key_code in settings.SYS_SWITCH_KEY:
                 self.initial_layout = self.get_layout()
 
     def start(self):
