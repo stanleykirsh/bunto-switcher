@@ -28,7 +28,6 @@ SWITCHER_COMMAND = 'sudo nice -n -20 python /usr/share/bunto/switcher.py'
 class SwitcherProcess:
     def __init__(self):
         self.process = None
-        self.AWAIT_TERMINATE = False
 
     def start(self):
         """Перед запуском убеждаемся что ни один экземпляр SwitcherProcess не запущен."""
@@ -37,11 +36,13 @@ class SwitcherProcess:
 
     def terminate(self):
         if self.process:
-            self.AWAIT_TERMINATE = True
-            self.process.terminate()
-            while self.is_running():
-                time.sleep(0.1)
-            self.AWAIT_TERMINATE = False
+            try:
+                self.process.terminate()
+                self.process.wait(timeout=2)  # Wait up to 2 seconds
+            except subprocess.TimeoutExpired:
+                print("Process didn't terminate, forcing kill...")
+                self.process.kill()
+                self.process.wait()  # Wait again after kill"""
 
     def is_running(self):
         return bool(self.process and self.process.poll() is None)
@@ -114,7 +115,7 @@ def check_running():
     path = f'{DIR_PATH}/main.py'    
     command = 'ps -e -o cmd= | grep bunto'
     result = subprocess.run(command, stdout=subprocess.PIPE, shell=True, text=True)
-    result = result.stdout# .splitlines()
+    result = result.stdout # .splitlines()
 
     if result.count(path) > 1:
         quit()

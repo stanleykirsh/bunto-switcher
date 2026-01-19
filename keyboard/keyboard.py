@@ -121,15 +121,17 @@ class Keyboard:
                         and listener.name != 'py-evdev-uinput'):
                     print('обнаружено устройство типа клавиатура:', path)
                     devpaths.append(listener.path)
-            except Exception as _:
+            except Exception as e:
                 """if self.listeners:
                     for listener in self.listeners:
                         self.ungrab(listener) """
+                # print(f'Exception in keyboard _get_devices: {e}')
                 # Здесь sleep не нужен, он только замедляет обновление устройств.
                 # Сюда приходим только когда InputDevice(path) не является валидным evdev устройством.
                 # Но таких находится всего несколько штук. Быстро их пролетаем, создаем валидные 
                 # и больше сюда не возвращаемся пока система не обновит список аппаратных устройств.
-                # sleep(self._EXCEPTION_DELAY)
+                # sleep(self._EXCEPTION_DELAY)   
+                pass             
         return devpaths
 
     def on_key_event(self, callback):
@@ -177,6 +179,8 @@ class Keyboard:
 
     def active_keys(self) -> list[int]:
         """"""
+        if not self.listeners:
+            return []
         listener = self.listeners[self.lastdevid]
         return listener.active_keys(verbose=False)
 
