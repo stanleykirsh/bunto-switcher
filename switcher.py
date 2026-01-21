@@ -19,11 +19,11 @@ class Switcher():
         self.keyboard = Keyboard()
         self.mouse = Mouse()
 
-        self.buffer = ['00000']
+        self.buffer = []
 
         dir_path = os.path.dirname(os.path.realpath(__file__))
-        self.ngrams_ru = self.load_ngrams((f'{dir_path}/data/ngrams-ru.txt',))
-        self.ngrams_en = self.load_ngrams((f'{dir_path}/data/ngrams-en.txt',))
+        self.ngrams_ru = set(self.load_ngrams((f'{dir_path}/data/ngrams-ru.txt',)))
+        self.ngrams_en = set(self.load_ngrams((f'{dir_path}/data/ngrams-en.txt',)))
 
         self.username = os.environ['SUDO_USER']
         self.useruid = os.environ['SUDO_UID']
@@ -173,14 +173,10 @@ class Switcher():
             key_code not in VIS_KEYS):
             return
         
-        # удаляем все пробелы и брейки слева и справа 
-        # т.к. кто знает сколько их там. осталяем чистый текст
-        buffer = [x for x in buffer if x[:4] not in settings.EOW_KEY_CODES]
-
-        # добавляем в начало и конец по пробелу чтобы правильно 
-        # обрабатывались нграммы начала слов (" ns " = " ты ")
-        # target_layout = self.get_target_layout(['05700'] + buffer + ['05700'])
-        target_layout = self.get_target_layout(['05700'] + buffer)
+        # удаляем брейки и определяем целевой язык
+        target_layout = self.get_target_layout(
+            [x for x in buffer if x[:4] != '0000']
+        )
 
         # не исправляем если целевая раскладка та же
         if target_layout == self.initial_layout:
@@ -190,8 +186,9 @@ class Switcher():
         if all(code[2:4] in ('00', '11') for code in buffer):
             return
 
-        # возвращаем в конец буфера последнюю нажатую клавишу
-        # buffer.append(self.encode_key(key_code))
+        # удаляем все EOW_KEY_CODES кроме последнего, если он там вообще есть
+        # это на случай если слово реально заканивается пробелом / табом / и т.д.
+        buffer = [x for x in buffer[:-1] if x[:4] not in settings.EOW_KEY_CODES] + [buffer[-1]]
         
         self.initial_layout = target_layout
         self.set_layout(target_layout)
@@ -240,11 +237,9 @@ class Switcher():
         # ... иначе заменяем в каждом элементе буфера, кроме первого, признаки капса на нижний регистр
         buffer = [x[:3] + '00' for x in buffer]
         buffer[0] = buffer[0][:3] + '10'
-        # self.buffer[-len(buffer):] = ['05700'] + buffer + ['05700']
         self.buffer = ['05700'] + buffer + ['05700']
 
         # добавляем в начало и конец по пробелу чтобы правильно 
-        # обрабатывались нграммы начала слов (" ns " = " ты ")
         target_layout = self.get_target_layout(['05700'] + buffer + ['05700'])
 
         # если требуется конвертация раскладки буфера, то выходим из процедуры
@@ -325,22 +320,25 @@ class Switcher():
     def update_buffer(self, key_code):
         """"""
         if key_code == 14: # backspace            
-            if self.buffer:
+            """if self.buffer:
                 self.buffer.pop()
             # если удалили всю строку в буфере, до добавляем метку начала строки
-            self.buffer = ['00000'] if not self.buffer else self.buffer
+            self.buffer = [] if not self.buffer else self.buffer"""
+            self.buffer = ['00000']
             return
         
         # если зажат ctrl то обнуляем буфер и символ не добавляем
         if bool(set(self.keyboard.active_keys()) & set((29, 97))): # ctrl
-            self.buffer = ['00000']
+            self.buffer = []
             return
         
         # видимый символ
         if key_code in VIS_KEYS:
             # это первый видимый символ после конца слова то обнуляем буфер
-            if self.buffer[-1][:4] in settings.EOW_KEY_CODES:
-                self.buffer = ['00000']
+            if (self.buffer and
+                self.buffer[-1][:4] in settings.EOW_KEY_CODES and
+                self.buffer[-1][:4] not in ('0000')):
+                self.buffer = ['05700']
             # добавляем символ в буфер
             self.buffer.append(self.encode_key(key_code))
             return
@@ -352,13 +350,13 @@ class Switcher():
         if (key_code not in (42, 54) and
             key_code not in settings.ASWITCH_KEY_CODES and
             key_code not in settings.MSWITCH_KEY_CODES):
-            self.buffer = ['00000']
+            self.buffer = []
             return
 
     def on_mouse_event(self, event):
         """"""
         self.initial_layout = self.get_layout()
-        self.buffer = ['00000']
+        self.buffer = []
 
     def on_keyboard_event(self, event):
         """"""
@@ -367,7 +365,7 @@ class Switcher():
         # KEY HOLD
         if (event.type == 'hold' and
             key_code not in (42, 54)): # shift
-            self.buffer = ['00000']
+            self.buffer = []
             return
 
         # KEY DOWN
