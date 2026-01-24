@@ -5,7 +5,6 @@ from mouse.mouse import Mouse
 from keyboard.keyboard import Keyboard
 from keyboard.keymap import (EV_KEYS, VIS_KEYS)
 from gi.repository import Gtk as gtk
-from threading import Timer
 
 import os
 import settings
@@ -101,13 +100,10 @@ class Switcher():
 
         ngrams = self.split_into_ngrams(string=string, min_len=3, max_len=4)
 
-        prob_ru = sum(ng in self.ngrams_ru for ng in ngrams)
-        prob_en = sum(ng in self.ngrams_en for ng in ngrams)
+        prob_ru = int(any(ng in self.ngrams_ru for ng in ngrams))
+        prob_en = int(any(ng in self.ngrams_en for ng in ngrams))
 
-        # prob_ru = sum(ng in string for ng in self.ngrams_ru)
-        # prob_en = sum(ng in string for ng in self.ngrams_en)
-
-        return 'ru' if prob_ru > prob_en else 'us' if prob_ru < prob_en else ''
+        return 'ru' if prob_ru > prob_en else 'us' if prob_ru < prob_en else self.initial_layout
 
     def get_layout(self):
         """"""
@@ -140,12 +136,11 @@ class Switcher():
 
         # Выполняем команды с указанием D-Bus адреса
         # Объединяем все команды в одну строку
-        commands_0 = (
+        commands = (
             f"""sudo -u {self.username} """
             f"""env DBUS_SESSION_BUS_ADDRESS={dbus_address} """
-            f"""gsettings set org.gnome.desktop.input-sources sources "{str_0}";""")
-
-        commands_1 = (
+            f"""gsettings set org.gnome.desktop.input-sources sources "{str_0}";"""
+            
             f"""sudo -u {self.username} """
             f"""env DBUS_SESSION_BUS_ADDRESS={dbus_address} """
             f"""gsettings set org.gnome.desktop.input-sources mru-sources "{str_1}" &"""
@@ -155,16 +150,9 @@ class Switcher():
             f"""gsettings set org.gnome.desktop.input-sources sources "{str_1}" &""")
 
         # Запускаем и ждем завершения
-        # Дождаться выполнения необходимо для корректного срабатывания следюущих команд
         subprocess.run(
-            ['bash', '-c', commands_0],
+            ['bash', '-c', commands],
             shell=False)
-        
-        # Запускаем и не ждем завершения
-        # Запускаем с небольшой задержкой для плавности
-        Timer(0.0, subprocess.run, kwargs={
-            'args': ['bash', '-c', commands_1],
-            'shell': False}).start()
 
     def kb_auto_process(self, key_code: int):
         """"""
@@ -175,7 +163,7 @@ class Switcher():
             key_code not in VIS_KEYS):
             return
         
-        # не исправялем если последний это EOW и
+        # не исправляем если последний это EOW и
         # предпоследний символ EOW. т.е. один из ;:()[] и т.д.
         if (len(buffer) >=2 and
             buffer[-1][:4] in settings.EOW_KEY_CODES and
@@ -193,7 +181,7 @@ class Switcher():
         buffer = [x for x in buffer if x[:4] not in settings.EOW_KEY_CODES]
         
         # не исправляем аббревиатуры которые полностью капсом
-        if all([not x[2:4] in ('00', '11') for x in buffer]):
+        if all([x[3:5] in ('10', '01') for x in buffer]):
             return
         
         self.initial_layout = target_layout
@@ -233,16 +221,26 @@ class Switcher():
         # удаляем все пробелы и брейки слева и справа
         buffer = [x for x in buffer if x[:4] not in settings.EOW_KEY_CODES]
         
-        if not self.upper_fix_required(buffer):
+        # не исправляем короче 2-х значимых
+        if len(buffer) <= 2: 
+            return
+
+        if not ( # два первых капсом, а хотя бы некоторые остальные не капсом
+            all([x[3:5] in ('10', '01') for x in buffer[:2]]) and
+            any([x[3:5] in ('00', '00') for x in buffer[2:]])):
             return
 
         # ... иначе заменяем в каждом элементе буфера, кроме первого, признаки капса на нижний регистр
         buffer = [x[:3] + '00' for x in buffer]
         buffer[0] = buffer[0][:3] + '10'
-        self.buffer = ['05700'] + buffer + ['05700']
+        
+        if (self.buffer[0] in settings.EOW_KEY_CODES): buffer = ['05700'] + buffer
+        if (self.buffer[-1] in settings.EOW_KEY_CODES): buffer = buffer + ['05700']
 
-        # добавляем в начало и конец по пробелу чтобы правильно 
-        target_layout = self.get_target_layout(['05700'] + buffer + ['05700'])
+        self.buffer = buffer
+
+        # определяем целевой язык 
+        target_layout = self.get_target_layout(buffer)
 
         # если требуется конвертация раскладки буфера, то выходим из процедуры
         # конвертация раскладки буфера произойдет в kb_auto_process, а капсы мы уже исправили
@@ -257,21 +255,6 @@ class Switcher():
         # backspace = 14
         self.keyboard.type([14]*len(buffer))
         self.type_buffer(buffer)
-
-    def upper_fix_required(self, buffer):
-        """"""
-        string = self.decode_buffer(buffer, layout='us', usecaps=True)
-        # ИСправление
-        if (len(string) >= 2
-            and string[0:2].isupper()
-                and not string.isupper()):
-            return True
-        # исПРАВЛЕНИЕ
-        if (len(string) >= 2
-            and string[0:2].islower()
-                and not string.islower()):
-            return True
-        return False
 
     def type_buffer(self, buffer):
         """"""
@@ -336,11 +319,19 @@ class Switcher():
             self.buffer = []
             return
         
+        # первый печатный символ после EOW
         if (self.buffer and
             key_code not in settings.MSWITCH_KEY_CODES and
             self.buffer[-1][:4] in settings.EOW_KEY_CODES):
             self.buffer = [self.buffer[-1]]
         
+        # нужно исключение для первого печатного символа после EOW если EOW был ENTER
+        # ENTER очищает буфер. это нужно для правильной обработки IntelliSense в разных IDE.
+        if (self.buffer and
+            key_code not in settings.MSWITCH_KEY_CODES and
+            self.buffer[-1][:3] in '028'):
+            self.buffer = []
+
         # видимый символ добавляем в буфер
         if key_code in VIS_KEYS:
             self.buffer.append(self.encode_key(key_code))
@@ -378,7 +369,6 @@ class Switcher():
             # потому что так выглядит плавнее и комфортнее, хотя может быть менее эффективно
             self.keyboard.press(key_code)
             self.update_buffer(key_code)
-            print(self.buffer)
 
             if settings.SWITCH_TWOCAPS:
                 self.caps_auto_process(key_code)
