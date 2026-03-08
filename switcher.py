@@ -173,14 +173,13 @@ class Switcher():
         # определяем целевой язык
         target_layout = self.get_target_layout(buffer)
 
-        # не исправляем если целевая раскладка та же
+        # не исправляем если целевая раскладка та же что текущая
         if target_layout == self.initial_layout:
             return
-
-        # удаляем все пробелы и брейки слева и справа
-        buffer = [x for x in buffer if x[:4] not in settings.EOW_KEY_CODES]
         
         # не исправляем аббревиатуры которые полностью капсом
+        # удаляем все пробелы и брейки слева и справа, затем проверяем
+        b = [x for x in buffer if x[:4] not in settings.EOW_KEY_CODES]        
         if all([x[3:5] in ('10', '01') for x in buffer]):
             return
         

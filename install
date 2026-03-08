@@ -55,15 +55,15 @@ echo "Проверяю установленные зависимости..."
 # релогин или перезагрузка может потребоваться после первого шага
 rpm -qa | grep -qw gnome-shell-extension-appindicator ||
     { echo "Устанавливаю appindicator...";
-    sudo dnf -y install gnome-shell-extension-appindicator; 
+    sudo dnf install gnome-shell-extension-appindicator -y; 
     gnome-extensions enable appindicatorsupport@rgcjonas.gmail.com; }
 
 # evdev
 # sudo dnf makecache
-# sudo dnf install python3-evdev.x86_64
+# sudo dnf install python3-evdev -y
 rpm -qa | grep -qw python3-evdev ||
     { echo "Устанавливаю evdev...";
-    sudo dnf -y install python3-evdev; }
+    sudo dnf install python3-evdev -y; }
 
 # dbus-x11
 # sudo dnf install dbus-x11 -y

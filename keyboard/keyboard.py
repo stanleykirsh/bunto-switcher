@@ -197,14 +197,6 @@ class Keyboard:
             device.ungrab()
         except:
             pass
-    
-    """def grab(self) -> None:
-        """"""
-        self.listeners[self.lastdevid].grab()
-
-    def ungrab(self) -> None:
-        """"""
-        self.listeners[self.lastdevid].ungrab()"""
 
 
 ### DEBUG ###
