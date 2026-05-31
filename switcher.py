@@ -386,7 +386,7 @@ class Switcher():
 
     def start(self):
         """"""
-        self.mouse.on_button_event(self.on_mouse_event)
+        # self.mouse.on_button_event(self.on_mouse_event)
         self.keyboard.on_key_event(self.on_keyboard_event)
 
 
