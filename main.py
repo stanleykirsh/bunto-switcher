@@ -22,7 +22,7 @@ from gi.repository import AppIndicator3 as appindicator
 
 APPINDICATOR_ID = 'buntoappindicator'
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
-SWITCHER_COMMAND = 'sudo nice -n -20 python /usr/share/bunto/switcher.py'
+SWITCHER_COMMAND = 'sudo nice -n -18 python /usr/share/bunto/switcher.py'
 
 
 class SwitcherProcess:
@@ -67,9 +67,13 @@ def build_menu():
     """"""
     menu = gtk.Menu()
     ####
-    item_title_version = gtk.MenuItem.new_with_label(f'Версия {VERSION}')
+    item_title_version = gtk.MenuItem.new_with_label(f'Bunto {VERSION}')
     item_title_version.connect('activate', show_log)
     menu.append(item_title_version)
+    ####
+    # Добавляем разделитель после заголовка
+    # separator = gtk.SeparatorMenuItem()
+    # menu.append(separator)
     ####
     item_action = gtk.MenuItem.new_with_label('Настройки')
     item_action.connect('activate', show_settings)
