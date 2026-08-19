@@ -154,6 +154,16 @@ class Switcher():
             ['bash', '-c', commands],
             shell=False)
 
+    def wait_layout_change(self, layout: str, timeout: float = 2.0):
+        """"""
+        import time
+        start = time.monotonic()
+        while time.monotonic() - start < timeout:
+            if self.get_layout() == layout:
+                return
+            time.sleep(0.01)
+        self.initial_layout = layout
+
     def kb_auto_process(self, key_code: int):
         """"""
         buffer = self.buffer
@@ -185,6 +195,7 @@ class Switcher():
         
         self.initial_layout = target_layout
         self.set_layout(target_layout)
+        self.wait_layout_change(target_layout)
 
         # backspace = 14
         self.keyboard.type([14]*len(buffer))
@@ -203,6 +214,7 @@ class Switcher():
 
         self.initial_layout = target_layout
         self.set_layout(target_layout)
+        self.wait_layout_change(target_layout)
         
         # backspace = 14
         self.keyboard.type([14]*len(buffer))
@@ -246,6 +258,7 @@ class Switcher():
         if target_layout != self.initial_layout:
             self.initial_layout = target_layout
             self.set_layout(target_layout)
+            self.wait_layout_change(target_layout)
             # return
         
         # возвращаем в конец буфера последнюю нажатую клавишу
