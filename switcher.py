@@ -137,10 +137,12 @@ class Switcher():
         # Выполняем команды с указанием D-Bus адреса
         # Объединяем все команды в одну строку
         commands = (
+            # Собственно переключение раскладки в системе
             f"""sudo -u {self.username} """
             f"""env DBUS_SESSION_BUS_ADDRESS={dbus_address} """
             f"""gsettings set org.gnome.desktop.input-sources sources "{str_0}";"""
             
+            # Обновление раскладки на панели GNOME (два следующих блока)
             f"""sudo -u {self.username} """
             f"""env DBUS_SESSION_BUS_ADDRESS={dbus_address} """
             f"""gsettings set org.gnome.desktop.input-sources mru-sources "{str_1}" &"""
@@ -160,6 +162,7 @@ class Switcher():
         start = time.monotonic()
         while time.monotonic() - start < timeout:
             if self.get_layout() == layout:
+                time.sleep(0.01)
                 return
             time.sleep(0.01)
         self.initial_layout = layout
@@ -394,8 +397,8 @@ class Switcher():
             self.keyboard.release(key_code)
 
             # обновляем текущую раскладку при ручном переключении
-            if key_code in settings.SYS_SWITCH_KEY:
-                self.initial_layout = self.get_layout()
+            # if key_code in settings.SYS_SWITCH_KEY:
+            #     self.initial_layout = self.get_layout()
 
     def start(self):
         """"""

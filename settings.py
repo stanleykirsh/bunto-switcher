@@ -1,4 +1,4 @@
-VERSION = "26.08.18"
+VERSION = "26.08.20"
 
 # Исправлять раскладку автоматически.
 SWITCH_AUTO = True
@@ -10,7 +10,7 @@ SWITCH_MANUAL = True
 SWITCH_TWOCAPS = True
 
 # Сочетание клавиш на которую в системе завязано переключение раскладки.
-SYS_SWITCH_KEY = [29, 42] # ["ctrl_left", "shift_left"]
+SYS_SWITCH_KEY = [29, 42, 125, 126] # ctrl_left, shift_left, win_left, win_right
 
 # Символы которые являются признаком заверешения ввода слова.
 EOW_KEY_CODES = [
@@ -35,7 +35,7 @@ EOW_KEY_CODES = [
 ]
 
 # Клавиши по которым происходит автоматическое переключение раскладки если SWITCH_AUTO = True.
-ASWITCH_KEY_CODES = [57, 15] # 57: space, 15: tab, 28: enter
+# ASWITCH_KEY_CODES = [57, 15] # 57: space, 15: tab, 28: enter
 
 # Клавиши по которым происходит ручное переключение раскладки если SWITCH_MANUAL = True.
 MSWITCH_KEY_CODES = [119] # pause
